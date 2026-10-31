@@ -1,4 +1,4 @@
-﻿package br.com.ruy.pos.sync
+package br.com.ruy.pos.sync
 
 import android.content.Context
 import androidx.work.CoroutineWorker
@@ -11,8 +11,9 @@ class SyncWorker(appContext: Context, params: WorkerParameters) : CoroutineWorke
     override suspend fun doWork(): Result {
         val prefs = applicationContext.getSharedPreferences("ruy_pos_v1", Context.MODE_PRIVATE)
         val url = prefs.getString("sync_url", "") ?: ""
-        val token = "" // use secure storage in production
+        val token = prefs.getString("device_token", "") ?: ""
         if (!url.startsWith("https://")) return Result.retry()
+        if (token.isBlank()) return Result.retry()
         val repo = Repository(applicationContext)
         val pending = repo.pendingOrders()
         for (o in pending) {
@@ -20,8 +21,8 @@ class SyncWorker(appContext: Context, params: WorkerParameters) : CoroutineWorke
                 val obj = JSONObject()
                     .put("id", o.id)
                     .put("createdAt", o.createdAt)
-                    .put("totalCents", o.totalCents)
-                    .put("paymentStatus", o.paymentStatus)
+                    .put("total_cents", o.totalCents)
+                    .put("payment_status", o.paymentStatus)
                     .put("syncStatus", "PENDING")
                     .put("items", org.json.JSONArray(o.itemsJson))
                 val ok = SyncClient.send(url, token, obj)

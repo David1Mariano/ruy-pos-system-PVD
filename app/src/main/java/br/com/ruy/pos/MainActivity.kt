@@ -1,4 +1,4 @@
-ï»¿package br.com.ruy.pos
+package br.com.ruy.pos
 
 import android.app.Activity
 import android.app.AlertDialog
@@ -58,7 +58,8 @@ class MainActivity : Activity() {
         val sub = TextView(this).apply { text="Ruy Caldo de Cana"; textSize=13f; setTextColor(black); gravity=Gravity.CENTER; setPadding(0,0,0,10) }
         root.addView(sub)
         val bar = LinearLayout(this).apply { orientation=LinearLayout.HORIZONTAL; setPadding(4,4,4,8) }
-        val st = TextView(this).apply { text="Status: ${if(prefs.getString("sync_url","")?.startsWith("https")==true) "Configurado" else "Nao config"}"; textSize=12f; setTextColor(black) }
+        val token = prefs.getString("device_token","") ?: ""
+        val st = TextView(this).apply { text="Status: "; textSize=12f; setTextColor(black) }
         bar.addView(st, LinearLayout.LayoutParams(0,-2,1f))
         root.addView(bar)
         label(title, 18f)
@@ -71,35 +72,41 @@ class MainActivity : Activity() {
     }
     
     private fun home() {
-        base("PDV - InÃ­cio")
+        base("PDV - Início")
         button("NOVA VENDA") { sales() }
-        button("SINCRONIZAR CATÃLOGO") { syncCatalog() }
-        button("HISTÃ“RICO") { history() }
+        button("SINCRONIZAR CATÁLOGO") { syncCatalog() }
+        button("HISTÓRICO") { history() }
         button("SINCRONIZAR AGORA") { syncNow() }
-        button("DIAGNÃ“STICO") { diag() }
-        button("CONFIGURAÃ‡Ã•ES") { config() }
-        label("CatÃ¡logo: ${products.size} itens", 12f)
+        button("DIAGNÓSTICO") { diag() }
+        button("CONFIGURAÇÕES") { config() }
+        label("Catálogo:  itens", 12f)
     }
     
     private fun diag() {
-        base("DiagnÃ³stico")
+        base("Diagnóstico")
         val baseUrl = prefs.getString("sync_url","") ?: ""
         val cat = if(baseUrl.contains("/api/pos/orders")) baseUrl.replace("/api/pos/orders","/api/pos/catalog") else if(baseUrl.isNotEmpty()) baseUrl else ""
-        label("URL: $baseUrl", 11f)
-        label("CatÃ¡logo URL: $cat", 11f)
-        button("TESTAR CONEXÃƒO") { testConnection(baseUrl) }
+        label("URL: ", 11f)
+        label("Catálogo URL: ", 11f)
+        label("Token: ", 11f)
+        button("TESTAR CONEXÃO") { testConnection(baseUrl) }
         button("VOLTAR") { home() }
     }
     
     private fun config() {
-        base("ConfiguraÃ§Ãµes")
-        label("URL HTTPS homologaÃ§Ã£o")
-        val url = EditText(this).apply { setText(prefs.getString("sync_url","http://192.168.1.5:18092/api/pos/orders")); hint="http://IP:18092/api/pos/orders"; setPadding(12,12,12,12) }
+        base("Configurações")
+        label("URL HTTPS homologação")
+        val url = EditText(this).apply { setText(prefs.getString("sync_url","https://api.ruycaldodecana.com.br/api/pos/orders")); hint="https://host/api/pos/orders"; setPadding(12,12,12,12) }
         root.addView(url)
+        label("Token do terminal (Bearer)")
+        val tok = EditText(this).apply { setText(prefs.getString("device_token","")); hint="token hex"; setPadding(12,12,12,12) }
+        root.addView(tok)
         button("SALVAR") {
             val u = url.text.toString().trim()
-            if(u.startsWith("http://") || u.startsWith("https://")) { prefs.edit().putString("sync_url",u).apply(); Toast.makeText(this,"Salvo",Toast.LENGTH_SHORT).show() }
-            else Toast.makeText(this,"URL invÃ¡lida",Toast.LENGTH_LONG).show()
+            val t = tok.text.toString().trim()
+            if(!u.startsWith("https://")) { Toast.makeText(this,"Exigir HTTPS",Toast.LENGTH_LONG).show(); return@button }
+            prefs.edit().putString("sync_url",u).putString("device_token",t).apply()
+            Toast.makeText(this,"Salvo",Toast.LENGTH_SHORT).show()
             home()
         }
         button("VOLTAR") { home() }
@@ -113,10 +120,10 @@ class MainActivity : Activity() {
                 conn.requestMethod="GET"; conn.connectTimeout=5000; conn.readTimeout=5000
                 val code = conn.responseCode
                 val txt = if(code in 200..299) conn.inputStream.bufferedReader().use { it.readText() } else ""
-                runOnUiThread { Toast.makeText(this,"HTTP $code items:${if(txt.contains("items")) "sim" else "nao"}",Toast.LENGTH_LONG).show() }
+                runOnUiThread { Toast.makeText(this,"HTTP  items:",Toast.LENGTH_LONG).show() }
                 conn.disconnect()
             } catch(e: Exception) {
-                runOnUiThread { Toast.makeText(this,"Erro: ${e.message}",Toast.LENGTH_LONG).show() }
+                runOnUiThread { Toast.makeText(this,"Erro: ",Toast.LENGTH_LONG).show() }
             }
         }
     }
@@ -136,7 +143,7 @@ class MainActivity : Activity() {
     private fun syncCatalog() {
         val baseUrl = prefs.getString("sync_url","") ?: ""
         val catalogUrl = if(baseUrl.contains("/api/pos/orders")) baseUrl.replace("/api/pos/orders","/api/pos/catalog") else if(baseUrl.isNotEmpty()) baseUrl else ""
-        if(catalogUrl.isEmpty()) { Toast.makeText(this,"Configure URL",Toast.LENGTH_SHORT).show(); config(); return }
+        if(!catalogUrl.startsWith("https://")) { Toast.makeText(this,"Exigir HTTPS",Toast.LENGTH_SHORT).show(); config(); return }
         Toast.makeText(this,"Sincronizando...",Toast.LENGTH_SHORT).show()
         thread {
             try {
@@ -166,10 +173,10 @@ class MainActivity : Activity() {
                     runOnUiThread { 
                         products.clear(); unitPrice.clear()
                         list.filter { it.active }.forEach { p -> products.add(p); unitPrice[p.name]=p.priceCents }
-                        Toast.makeText(this,"CatÃ¡logo: ${products.size}",Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this,"Catálogo: ",Toast.LENGTH_SHORT).show()
                     }
                 } else {
-                    runOnUiThread { Toast.makeText(this,"HTTP $code",Toast.LENGTH_SHORT).show() }
+                    runOnUiThread { Toast.makeText(this,"HTTP ",Toast.LENGTH_SHORT).show() }
                 }
                 conn.disconnect()
             } catch(e: Exception) {
@@ -181,27 +188,24 @@ class MainActivity : Activity() {
     
     private fun sales() {
         base("VENDA")
-        if(products.isEmpty()) label("Sem produtos. Sincronize catÃ¡logo.")
-        products.forEach { p -> button("+ ${p.name} | ${reais(p.priceCents)}") { cart[p.name] = (cart[p.name]?:0)+1; sales() } }
+        if(products.isEmpty()) label("Sem produtos. Sincronize catálogo.")
+        products.forEach { p -> button("+  | ") { cart[p.name] = (cart[p.name]?:0)+1; sales() } }
         label("CARRINHO", 18f)
         var total = 0
         cart.forEach { (name,qty) ->
             val unit = unitPrice[name] ?: 0
             total += unit*qty
-            button("$qty x $name = ${reais(unit*qty)}  [-]") {
+            button(" x  =   [-]") {
                 val n=(cart[name]?:0)-1; if(n<=0) cart.remove(name) else cart[name]=n; sales()
             }
         }
-        label("TOTAL: ${reais(total)}", 22f)
+        label("TOTAL: ", 22f)
         if(cart.isNotEmpty()) button("REGISTRAR PEDIDO (LOCAL)") {
             thread {
                 try {
                     val items = cart.map { it.key to it.value }
                     val id = kotlinx.coroutines.runBlocking { repo.saveOrder(total, items, unitPrice) }
-                    runOnUiThread {
-                        cart.clear()
-                        AlertDialog.Builder(this).setTitle("Pedido salvo").setMessage("Registrado localmente").setPositiveButton("OK"){_,_->home()}.show()
-                    }
+                    runOnUiThread { Toast.makeText(this,"Pedido  salvo (pendente)",Toast.LENGTH_SHORT).show(); cart.clear(); home() }
                 } catch(e: Exception) {
                     runOnUiThread { Toast.makeText(this,"Erro",Toast.LENGTH_SHORT).show() }
                 }
@@ -210,25 +214,16 @@ class MainActivity : Activity() {
         button("VOLTAR") { home() }
     }
     
-    private fun history() {
-        base("HISTÃ“RICO")
-        thread {
-            try {
-                val list = kotlinx.coroutines.runBlocking { repo.allOrders() }
-                runOnUiThread {
-                    if(list.isEmpty()) label("Nenhum pedido")
-                    else list.take(40).forEach { o -> label("${o.id.take(8)} | ${reais(o.totalCents)} | ${o.syncStatus}", 11f) }
-                    button("VOLTAR") { home() }
-                }
-            } catch(e: Exception) {
-                runOnUiThread { label("Erro"); button("VOLTAR"){home()} }
-            }
-        }
-    }
+    private fun history() { base("HISTÓRICO"); label("(em construção)"); button("VOLTAR"){home()} }
     
     private fun syncNow() {
-        Toast.makeText(this,"Sincronizando...",Toast.LENGTH_SHORT).show()
-        WorkManager.getInstance(this).enqueue(OneTimeWorkRequestBuilder<SyncWorker>().build())
-        Handler(Looper.getMainLooper()).postDelayed({ Toast.makeText(this,"Agendado",Toast.LENGTH_SHORT).show(); home() }, 1500)
+        val url = prefs.getString("sync_url","") ?: ""
+        val token = prefs.getString("device_token","") ?: ""
+        if(!url.startsWith("https://")) { Toast.makeText(this,"Exigir HTTPS",Toast.LENGTH_SHORT).show(); config(); return }
+        if(token.isBlank()) { Toast.makeText(this,"Token ausente",Toast.LENGTH_SHORT).show(); config(); return }
+        Toast.makeText(this,"Sincronizando agora...",Toast.LENGTH_SHORT).show()
+        val work = OneTimeWorkRequestBuilder<SyncWorker>().build()
+        WorkManager.getInstance(this).enqueue(work)
+        Handler(Looper.getMainLooper()).postDelayed({ Toast.makeText(this,"Sincronização agendada",Toast.LENGTH_SHORT).show() }, 800)
     }
 }

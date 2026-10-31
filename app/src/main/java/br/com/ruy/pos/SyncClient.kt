@@ -4,11 +4,11 @@ import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 
-/** Confirma somente aceite dur√°vel pelo servidor; n√£o implica pagamento aprovado. */
+/** Confirma somente aceite dur·vel pelo servidor; n„o implica pagamento aprovado. */
 object SyncClient {
     fun send(endpoint: String, bearer: String, order: JSONObject): Boolean {
-        require(endpoint.startsWith("https://"))
-        require(bearer.isNotBlank())
+        if (!endpoint.startsWith("https://")) throw IllegalArgumentException("https_required")
+        if (bearer.isBlank()) throw IllegalArgumentException("token_required")
         val id = order.getString("id")
         val conn = (URL(endpoint).openConnection() as HttpURLConnection)
         try {
@@ -17,12 +17,12 @@ object SyncClient {
             conn.readTimeout = 10000
             conn.doOutput = true
             conn.instanceFollowRedirects = false
-            conn.setRequestProperty("Authorization", "Bearer $bearer")
+            conn.setRequestProperty("Authorization", "Bearer " + bearer)
             conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
             conn.setRequestProperty("Idempotency-Key", id)
             conn.outputStream.use { it.write(order.toString().toByteArray(Charsets.UTF_8)) }
             val status = conn.responseCode
-            if (status !in 200..299) throw IllegalStateException("HTTP $status")
+            if (status < 200 || status >= 300) throw IllegalStateException("HTTP " + status)
             val reply = conn.inputStream.bufferedReader().use { it.readText() }
             val obj = JSONObject(reply)
             return obj.optString("id") == id && obj.optBoolean("persisted", false)
