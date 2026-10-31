@@ -81,8 +81,6 @@ class MainActivity : Activity() {
         base("Configuração HTTPS")
         val url = EditText(this).apply { setText(prefs.getString("sync_url","")); hint="https://.../api/pos/orders" }
         root.addView(url)
-        val token = EditText(this).apply { hint="Token do terminal"; inputType=android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD }
-        root.addView(token)
         button("Salvar") {
             val u = url.text.toString().trim()
             if(u.startsWith("https://")) { prefs.edit().putString("sync_url",u).apply(); Toast.makeText(this,"Salvo",Toast.LENGTH_SHORT).show() }
@@ -95,7 +93,7 @@ class MainActivity : Activity() {
     private fun loadCatalog() {
         thread {
             try {
-                val list = repo.products()
+                val list = kotlinx.coroutines.runBlocking { repo.products() }
                 runOnUiThread {
                     products.clear(); unitPrice.clear()
                     list.forEach { p -> products.add(p); unitPrice[p.name] = p.priceCents }
@@ -107,6 +105,7 @@ class MainActivity : Activity() {
     private fun syncCatalog() {
         val baseUrl = prefs.getString("sync_url","") ?: ""
         val catalogUrl = if(baseUrl.endsWith("/api/pos/orders")) baseUrl.replace("/api/pos/orders","/api/pos/catalog") else baseUrl
+        if(catalogUrl.isEmpty() || !catalogUrl.startsWith("https://")) { Toast.makeText(this,"Configure servidor HTTPS",Toast.LENGTH_SHORT).show(); config(); return }
         Toast.makeText(this,"Sincronizando catálogo...",Toast.LENGTH_SHORT).show()
         thread {
             try {
@@ -134,7 +133,6 @@ class MainActivity : Activity() {
                             unit = it.optString("unit",null)
                         ))
                     }
-                    // persist via repo db - simplified
                     runOnUiThread { 
                         products.clear(); unitPrice.clear()
                         list.filter { it.active }.forEach { p -> products.add(p); unitPrice[p.name]=p.priceCents }
@@ -151,6 +149,7 @@ class MainActivity : Activity() {
     
     private fun sales() {
         base("Nova venda")
+        if(products.isEmpty()) label("Nenhum produto. Sincronize o catálogo.")
         products.forEach { p -> button("+ ${p.name} · ${reais(p.priceCents)}") { cart[p.name] = (cart[p.name]?:0)+1; sales() } }
         label("CARRINHO", 18f)
         var total = 0
@@ -166,10 +165,10 @@ class MainActivity : Activity() {
             thread {
                 try {
                     val items = cart.map { it.key to it.value }
-                    val id = repo.saveOrder(total, items, unitPrice)
+                    val id = kotlinx.coroutines.runBlocking { repo.saveOrder(total, items, unitPrice) }
                     runOnUiThread {
                         cart.clear()
-                        AlertDialog.Builder(this).setTitle("Pedido salvo").setMessage("Pedido $id registrado localmente.").setPositiveButton("OK"){_,_->home()}.show()
+                        AlertDialog.Builder(this).setTitle("Pedido salvo").setMessage("Pedido registrado localmente.").setPositiveButton("OK"){_,_->home()}.show()
                     }
                 } catch(e: Exception) {
                     runOnUiThread { Toast.makeText(this,"Erro ao salvar",Toast.LENGTH_SHORT).show() }
@@ -183,10 +182,10 @@ class MainActivity : Activity() {
         base("Pedidos locais")
         thread {
             try {
-                val list = repo.allOrders()
+                val list = kotlinx.coroutines.runBlocking { repo.allOrders() }
                 runOnUiThread {
                     if(list.isEmpty()) label("Nenhum pedido")
-                    else list.take(20).forEach { o -> label("ID: ${o.id.take(8)}... | ${reais(o.totalCents)} | ${o.syncStatus} | ${o.paymentStatus}", 12f) }
+                    else list.take(30).forEach { o -> label("${o.id.take(8)} | ${reais(o.totalCents)} | ${o.syncStatus} | ${o.paymentStatus}", 11f) }
                     button("Voltar") { home() }
                 }
             } catch(e: Exception) {
