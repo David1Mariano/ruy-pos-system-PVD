@@ -5,11 +5,11 @@
 }
 android {
     namespace = "br.com.ruy.pos"
-    compileSdk = 35
+    compileSdk = 34
     defaultConfig {
         applicationId = "br.com.ruy.pos"
         minSdk = 23
-        targetSdk = 28
+        targetSdk = 34
         versionCode = 3
         versionName = "0.3.0"
     }
@@ -22,4 +22,5 @@ dependencies {
     kapt("androidx.room:room-compiler:2.6.1")
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
 }
