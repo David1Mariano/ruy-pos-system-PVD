@@ -1,0 +1,329 @@
+package br.com.ruy.pos
+
+import android.app.Activity
+import android.app.AlertDialog
+import android.content.Context
+import android.content.Intent
+import android.graphics.Color
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.text.InputType
+import android.view.Gravity
+import android.view.ViewGroup
+import android.widget.*
+import androidx.work.*
+import br.com.ruy.pos.data.Repository
+import br.com.ruy.pos.data.local.ProductEntity
+import br.com.ruy.pos.sync.SyncWorker
+import org.json.JSONArray
+import org.json.JSONObject
+import java.net.HttpURLConnection
+import java.net.URL
+import java.text.NumberFormat
+import java.util.Locale
+import java.util.UUID
+import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.thread
+
+class MainActivity : Activity() {
+    private val red = Color.rgb(185, 19, 31)
+    private val black = Color.BLACK
+    private val white = Color.WHITE
+    private val green = Color.rgb(0, 150, 0)
+    private lateinit var root: LinearLayout
+    private lateinit var repo: Repository
+    private val prefs by lazy { getSharedPreferences("ruy_pos_v1", MODE_PRIVATE) }
+    private fun showSales() {
+        currentScreen = "sales"
+        root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(16, 16, 16, 16); setBackgroundColor(white) }
+        setContentView(root)
+
+        val header = TextView(this).apply { text = "PDV - VENDA"; textSize = 24f; setTextColor(red); gravity = Gravity.CENTER; setPadding(0, 4, 0, 8); setTypeface(null, android.graphics.Typeface.BOLD) }
+        root.addView(header)
+
+        val statusRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(4, 4, 4, 8) }
+        val statusLabel = TextView(this).apply { text = "Status: "; textSize = 12f; setTextColor(black) }
+        statusRow.addView(statusLabel, LinearLayout.LayoutParams(0, -2, 1f))
+        val connBadge = TextView(this).apply {
+            text = if (isOnline()) "Online" else "Offline"
+            textSize = 12f; setTextColor(white); setBackgroundColor(if (isOnline()) green else red); setPadding(8, 4, 8, 4)
+        }
+        statusRow.addView(connBadge)
+        root.addView(statusRow)
+
+        if (products.isEmpty()) {
+            root.addView(TextView(this).apply { text = "Sem produtos disponíveis. Sincronize o catálogo."; textSize = 14f; setTextColor(black); gravity = Gravity.CENTER; setPadding(0, 16, 0, 16) })
+        } else {
+            val catLabel = TextView(this).apply { text = "CATEGORIAS E PRODUTOS"; textSize = 16f; setTextColor(red); setTypeface(null, android.graphics.Typeface.BOLD); setPadding(4, 12, 4, 4) }
+            root.addView(catLabel)
+
+            val scroll = ScrollView(this)
+            val prodContainer = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+            scroll.addView(prodContainer)
+            root.addView(scroll, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0).apply { weight = 1f })
+
+            products.forEach { p ->
+                val btn = Button(this).apply {
+                    text = "${p.name}\n${reais(p.priceCents)}"
+                    isAllCaps = false; setBackgroundColor(red); setTextColor(white); setPadding(16, 24, 16, 24)
+                    setOnClickListener { cart[p.name] = (cart[p.name] ?: 0) + 1; showSales() }
+                    layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 120).apply { bottomMargin = 8 }
+                }
+                prodContainer.addView(btn)
+            }
+        }
+
+        val cartLabel = TextView(this).apply { text = "CARRINHO"; textSize = 16f; setTextColor(red); setTypeface(null, android.graphics.Typeface.BOLD); setPadding(4, 12, 4, 4) }
+        root.addView(cartLabel)
+
+        val cartScroll = ScrollView(this)
+        val cartContainer = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        cartScroll.addView(cartContainer)
+        root.addView(cartScroll, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 120))
+
+        var total = 0
+        cart.forEach { (name, qty) ->
+            val unit = unitPrice[name] ?: 0
+    }
+
+    private fun registerOrder() {
+        if (cart.isEmpty()) { Toast.makeText(this@MainActivity, "Carrinho vazio", Toast.LENGTH_SHORT).show(); return }
+
+        val total = cart.fold(0) { acc, (name, qty) -> acc + (unitPrice[name] ?: 0) * qty }
+        val items = cart.map { it.key to it.value }
+
+        val orderJson = JSONObject().apply {
+            put("id", UUID.randomUUID().toString())
+            put("createdAt", System.currentTimeMillis())
+            put("totalCents", total)
+            put("paymentStatus", "UNPAID")
+            put("syncStatus", "PENDING")
+            val itemsArr = JSONArray()
+            items.forEach { (name, qty) ->
+                val item = JSONObject()
+                item.put("name", name)
+                item.put("qty", qty)
+                item.put("unitCents", (unitPrice[name] ?: 0).toInt())
+                itemsArr.put(item)
+            }
+            put("items", itemsArr)
+        }
+
+        val url = prefs.getString("sync_url", "") ?: ""
+        val token = prefs.getString("device_token", "") ?: ""
+
+        if (!url.startsWith("https://")) { Toast.makeText(this@MainActivity, "URL não configurada (HTTPS obrigatório)", Toast.LENGTH_LONG).show(); return }
+        if (token.isBlank()) { Toast.makeText(this@MainActivity, "Token do terminal não configurado", Toast.LENGTH_LONG).show(); return }
+
+        thread {
+            val syncResult = SyncClient.send(url, token, orderJson)
+            if (syncResult.isSuccess) {
+                runOnUiThread { Toast.makeText(this@MainActivity, "Pedido confirmado no servidor", Toast.LENGTH_SHORT).show(); cart.clear(); showHome() }
+            } else {
+                val exception = syncResult.exceptionOrNull()
+                val msg = exception?.message ?: "Erro desconhecido"
+                runOnUiThread { Toast.makeText(this@MainActivity, if (msg.startsWith("409_CONFLICT")) "Conflito de idempotência" else "Falha ao enviar: $msg", Toast.LENGTH_LONG).show() }
+            }
+        }.start()
+    }
+
+    private fun showHistory() {
+            total += unit * qty
+            val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(4, 4, 4, 4) }
+            row.addView(TextView(this).apply { text = "$name x$qty"; textSize = 14f; setTextColor(black); layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, 1f) })
+            row.addView(TextView(this).apply { text = reais(unit * qty); textSize = 14f; setTextColor(black) })
+            val btnRem = Button(this).apply {
+                text = "[-]"; setBackgroundColor(red); setTextColor(white); setPadding(8, 4, 8, 4)
+                setOnClickListener { val n = (cart[name] ?: 0) - 1; if (n <= 0) cart.remove(name) else cart[name] = n; showSales() }
+                layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+            }
+    private fun showHistory() {
+        currentScreen = "history"
+        root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(16, 16, 16, 16); setBackgroundColor(white) }
+        setContentView(root)
+
+        val header = TextView(this).apply { text = "HISTÓRICO DE PEDIDOS"; textSize = 24f; setTextColor(red); gravity = Gravity.CENTER; setPadding(0, 4, 0, 8); setTypeface(null, android.graphics.Typeface.BOLD) }
+        root.addView(header)
+
+        val statusRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(4, 4, 4, 8) }
+        val statusLabel = TextView(this).apply { text = "Status: "; textSize = 12f; setTextColor(black) }
+        statusRow.addView(statusLabel, LinearLayout.LayoutParams(0, -2, 1f))
+        val connBadge = TextView(this).apply {
+            text = if (isOnline()) "Online" else "Offline"
+            textSize = 12f; setTextColor(white); setBackgroundColor(if (isOnline()) green else red); setPadding(8, 4, 8, 4)
+        }
+        statusRow.addView(connBadge)
+        root.addView(statusRow)
+
+        val scroll = ScrollView(this)
+        val orderContainer = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        scroll.addView(orderContainer)
+        root.addView(scroll, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0).apply { weight = 1f })
+
+        val allOrders = runBlocking(Dispatchers.Main) { repo.allOrders() }
+        if (allOrders.isEmpty()) {
+            orderContainer.addView(TextView(this).apply { text = "Nenhum pedido encontrado"; textSize = 14f; setTextColor(black); gravity = Gravity.CENTER; setPadding(0, 32, 0, 32) })
+        } else {
+            allOrders.forEach { o ->
+                val statusText = when (o.syncStatus) {
+                    "PENDING" -> "Pendente (local)"
+    private fun showConfig() {
+        currentScreen = "config"
+        root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(16, 16, 16, 16); setBackgroundColor(white) }
+        setContentView(root)
+
+        val header = TextView(this).apply { text = "CONFIGURAÇÕES"; textSize = 24f; setTextColor(red); gravity = Gravity.CENTER; setPadding(0, 4, 0, 8); setTypeface(null, android.graphics.Typeface.BOLD) }
+        root.addView(header)
+
+        root.addView(TextView(this).apply { text = "URL do Servidor (HTTPS)"; textSize = 14f; setTextColor(black); setPadding(4, 12, 4, 4) })
+
+        val etUrl = EditText(this).apply { hint = "https://pos-hml.ruycaldodecana.com.br"; setText(prefs.getString("sync_url", "")); inputType = InputType.TYPE_CLASS_TEXT; setTextColor(black); setPadding(12, 16, 12, 16); layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT) }
+        root.addView(etUrl)
+
+        root.addView(TextView(this).apply { text = "Token de Autenticação"; textSize = 14f; setTextColor(black); setPadding(4, 12, 4, 4) })
+
+        val etToken = EditText(this).apply { hint = "Token do terminal"; setText(prefs.getString("device_token", "")); inputType = InputType.TYPE_CLASS_TEXT; setTextColor(black); setPadding(12, 16, 12, 16); layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT) }
+        root.addView(etToken)
+
+        val btnSave = Button(this).apply { text = "SALVAR CONFIGURAÇÃO"; setBackgroundColor(red); setTextColor(white); setPadding(16, 24, 16, 24); setOnClickListener { val url = etUrl.text.toString(); val token = etToken.text.toString(); if (!url.startsWith("https://")) { Toast.makeText(this@MainActivity, "URL deve começar com https://", Toast.LENGTH_SHORT).show(); return@setOnClickListener }; prefs.edit().putString("sync_url", url).apply(); prefs.edit().putString("device_token", token).apply(); Toast.makeText(this@MainActivity, "Configuração salva", Toast.LENGTH_SHORT).show(); showHome() }; layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = 16; topMargin = 16 } }
+        root.addView(btnSave)
+    private fun syncNow() {
+        val url = prefs.getString("sync_url", "") ?: ""
+        val token = prefs.getString("device_token", "") ?: ""
+        if (!url.startsWith("https://")) { Toast.makeText(this@MainActivity, "URL não configurada (HTTPS obrigatório)", Toast.LENGTH_LONG).show(); return }
+        if (token.isBlank()) { Toast.makeText(this@MainActivity, "Token do terminal não configurado", Toast.LENGTH_LONG).show(); return }
+        Toast.makeText(this@MainActivity, "Sincronizando catálogo...", Toast.LENGTH_SHORT).show()
+        val work = OneTimeWorkRequestBuilder<SyncWorker>().build()
+        WorkManager.getInstance(this@MainActivity).enqueue(work)
+        Handler(Looper.getMainLooper()).postDelayed({ Toast.makeText(this@MainActivity, "Sincronização agendada", Toast.LENGTH_SHORT).show() }, 800)
+    }
+
+    private fun loadCatalog() {
+        thread {
+            try {
+                val url = prefs.getString("sync_url", "") ?: ""
+                val token = prefs.getString("device_token", "") ?: ""
+                if (!url.startsWith("https://") || token.isBlank()) return@thread
+
+                val conn = URL("$url/api/catalog").openConnection() as HttpURLConnection
+                conn.requestMethod = "GET"
+                conn.connectTimeout = 15000
+                conn.readTimeout = 15000
+                conn.setRequestProperty("Authorization", "Bearer $token")
+                val status = conn.responseCode
+                if (status == 200) {
+                    val reply = conn.inputStream.bufferedReader().use { it.readText() }
+                    val arr = JSONArray(reply)
+                    val list = mutableListOf<ProductEntity>()
+                    val priceMap = mutableMapOf<String, Int>()
+                    for (i in 0 until arr.length()) {
+                        val it = arr.getJSONObject(i)
+                        val product = ProductEntity(
+                            id = it.optString("id", UUID.randomUUID().toString()),
+                            sku = it.optString("sku", null),
+                            name = it.optString("name", ""),
+                            category = it.optString("category", null),
+                            priceCents = it.optInt("price_cents", 0),
+                            active = it.optBoolean("active", true),
+                            imageUrl = it.optString("image_url", null),
+                            version = it.optLong("version", 1),
+                            updatedAt = it.optString("updated_at", null),
+                            unit = it.optString("unit", null)
+                        )
+                        list.add(product)
+                        priceMap[product.name] = product.priceCents
+                    }
+                    runOnUiThread {
+                        products.clear()
+                        products.addAll(list)
+                        unitPrice.clear()
+                        unitPrice.putAll(priceMap)
+                        if (currentScreen == "sales") showSales()
+                        Toast.makeText(this@MainActivity, "Catálogo: ${list.size} produtos", Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    runOnUiThread { Toast.makeText(this@MainActivity, "Falha catálogo: HTTP $status", Toast.LENGTH_SHORT).show() }
+                }
+                conn.disconnect()
+            } catch (e: Exception) {
+                runOnUiThread { Toast.makeText(this@MainActivity, "Falha ao carregar catálogo: ${e.message}", Toast.LENGTH_SHORT).show() }
+            }
+        }.start()
+    }
+}
+
+
+        val btnTest = Button(this).apply { text = "TESTAR CONEXÃO"; setBackgroundColor(Color.rgb(200, 200, 200)); setTextColor(black); setPadding(16, 24, 16, 24); setOnClickListener { val url = etUrl.text.toString(); if (!url.startsWith("https://")) { Toast.makeText(this@MainActivity, "URL deve começar com https://", Toast.LENGTH_SHORT).show(); return@setOnClickListener }; thread { try { val conn = URL(url + "/api/health").openConnection() as HttpURLConnection; conn.requestMethod = "GET"; conn.connectTimeout = 10000; conn.readTimeout = 10000; val status = conn.responseCode; runOnUiThread { Toast.makeText(this@MainActivity, "Conexão OK - HTTP $status", Toast.LENGTH_SHORT).show() }; conn.disconnect() } catch (e: Exception) { runOnUiThread { Toast.makeText(this@MainActivity, "Falha: ${e.message}", Toast.LENGTH_SHORT).show() } } }.start() }; layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = 16 } }
+        root.addView(btnTest)
+
+        val btnBack = Button(this).apply { text = "VOLTAR"; setBackgroundColor(Color.rgb(200, 200, 200)); setTextColor(black); setPadding(16, 24, 16, 24); setOnClickListener { showHome() }; layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT) }
+        root.addView(btnBack)
+    }
+                    "SYNCED" -> "Confirmado no servidor"
+                    else -> o.syncStatus
+                }
+                val statusColor = when (o.syncStatus) { "PENDING" -> Color.rgb(255, 152, 0); "SYNCED" -> green; else -> black }
+                val card = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(12, 12, 12, 12); setBackgroundColor(white) }
+                card.addView(TextView(this).apply { text = "Pedido: ${o.id}"; textSize = 16f; setTextColor(black); setTypeface(null, android.graphics.Typeface.BOLD) })
+                card.addView(TextView(this).apply { text = "Status: $statusText   |   ${reais(o.totalCents)}"; textSize = 14f; setTextColor(statusColor) })
+                orderContainer.addView(card, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = 8 })
+            }
+        }
+
+        val btnBack = Button(this).apply { text = "VOLTAR"; setBackgroundColor(Color.rgb(200, 200, 200)); setTextColor(black); setPadding(16, 24, 16, 24); setOnClickListener { showHome() }; layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT) }
+        root.addView(btnBack)
+    }
+            row.addView(btnRem)
+            cartContainer.addView(row)
+        }
+
+        val totalRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(4, 8, 4, 8); setBackgroundColor(Color.rgb(250, 240, 240)) }
+        totalRow.addView(TextView(this).apply { text = "TOTAL: "; textSize = 20f; setTextColor(black); setTypeface(null, android.graphics.Typeface.BOLD); layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, 1f) })
+        totalRow.addView(TextView(this).apply { text = reais(total); textSize = 20f; setTextColor(red); setTypeface(null, android.graphics.Typeface.BOLD) })
+        root.addView(totalRow)
+
+        if (cart.isNotEmpty()) {
+            val btnRegister = Button(this).apply { text = "REGISTRAR PEDIDO"; setBackgroundColor(red); setTextColor(white); setPadding(16, 24, 16, 24); setOnClickListener { registerOrder() }; layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = 8 } }
+            root.addView(btnRegister)
+        }
+
+        val btnBack = Button(this).apply { text = "VOLTAR"; setBackgroundColor(Color.rgb(200, 200, 200)); setTextColor(black); setPadding(16, 24, 16, 24); setOnClickListener { showHome() }; layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT) }
+        root.addView(btnBack)
+    }
+
+    private fun registerOrder() {
+    private val cart = linkedMapOf<String, Int>()
+    private val products = mutableListOf<ProductEntity>()
+    private val unitPrice = mutableMapOf<String, Int>()
+    private var currentScreen: String = "home"
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        repo = Repository(this)
+        scheduleSync()
+        loadCatalog()
+        showHome()
+    }
+
+    private fun scheduleSync() {
+        val req = PeriodicWorkRequestBuilder<SyncWorker>(15, TimeUnit.MINUTES)
+            .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+            .build()
+        WorkManager.getInstance(this@MainActivity).enqueueUniquePeriodicWork("ruy_pos_sync", ExistingPeriodicWorkPolicy.KEEP, req)
+    }
+
+    private fun isOnline(): Boolean {
+        val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val network = cm.activeNetwork
+        if (network == null) return false
+        val caps = cm.getNetworkCapabilities(network)
+        return caps != null && (caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) || caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR))
+    }
+
+    private fun showHome() {
+

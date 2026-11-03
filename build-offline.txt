@@ -1,0 +1,21 @@
+﻿gradlew.bat : 
+No linha:4 caractere:190
++ ... os-system"; & ".\gradlew.bat" "app:assembleDebug" --offline 2>&1 | Ou ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Could not determine the dependencies of task ':app:compileDebugJavaWithJavac'.
+> Could not determine the dependencies of null.
+   > Failed to find target with hash string 'android-35' in: C:\Users\Pichau\AppData\Local\Android\Sdk
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 1s

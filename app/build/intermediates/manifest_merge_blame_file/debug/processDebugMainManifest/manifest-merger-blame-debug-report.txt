@@ -1,0 +1,280 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="br.com.ruy.pos"
+4    android:versionCode="15"
+5    android:versionName="0.6.2" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="23"
+9        android:targetSdkVersion="34" />
+10
+11    <uses-permission android:name="android.permission.INTERNET" />
+11-->C:\Users\Pichau\Downloads\ruy-pos-system\app\src\main\AndroidManifest.xml:2:2-63
+11-->C:\Users\Pichau\Downloads\ruy-pos-system\app\src\main\AndroidManifest.xml:2:19-61
+12    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+12-->C:\Users\Pichau\Downloads\ruy-pos-system\app\src\main\AndroidManifest.xml:3:2-75
+12-->C:\Users\Pichau\Downloads\ruy-pos-system\app\src\main\AndroidManifest.xml:3:19-73
+13    <uses-permission android:name="android.permission.WAKE_LOCK" />
+13-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:23:5-68
+13-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:23:22-65
+14    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+14-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:25:5-81
+14-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:25:22-78
+15    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+15-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:26:5-77
+15-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:26:22-74
+16
+17    <permission
+17-->[androidx.core:core:1.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\0006c1e9390604d4be12422c9d5131c7\transformed\core-1.9.0\AndroidManifest.xml:22:5-24:47
+18        android:name="br.com.ruy.pos.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+18-->[androidx.core:core:1.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\0006c1e9390604d4be12422c9d5131c7\transformed\core-1.9.0\AndroidManifest.xml:23:9-81
+19        android:protectionLevel="signature" />
+19-->[androidx.core:core:1.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\0006c1e9390604d4be12422c9d5131c7\transformed\core-1.9.0\AndroidManifest.xml:24:9-44
+20
+21    <uses-permission android:name="br.com.ruy.pos.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+21-->[androidx.core:core:1.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\0006c1e9390604d4be12422c9d5131c7\transformed\core-1.9.0\AndroidManifest.xml:26:5-97
+21-->[androidx.core:core:1.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\0006c1e9390604d4be12422c9d5131c7\transformed\core-1.9.0\AndroidManifest.xml:26:22-94
+22
+23    <application
+23-->C:\Users\Pichau\Downloads\ruy-pos-system\app\src\main\AndroidManifest.xml:4:2-8:16
+24        android:allowBackup="false"
+24-->C:\Users\Pichau\Downloads\ruy-pos-system\app\src\main\AndroidManifest.xml:4:15-42
+25        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+25-->[androidx.core:core:1.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\0006c1e9390604d4be12422c9d5131c7\transformed\core-1.9.0\AndroidManifest.xml:28:18-86
+26        android:debuggable="true"
+27        android:extractNativeLibs="false"
+28        android:label="Ruy POS System"
+28-->C:\Users\Pichau\Downloads\ruy-pos-system\app\src\main\AndroidManifest.xml:4:43-73
+29        android:networkSecurityConfig="@xml/network_security_config"
+29-->C:\Users\Pichau\Downloads\ruy-pos-system\app\src\main\AndroidManifest.xml:4:202-262
+30        android:supportsRtl="true"
+30-->C:\Users\Pichau\Downloads\ruy-pos-system\app\src\main\AndroidManifest.xml:4:74-100
+31        android:theme="@android:style/Theme.Material.Light.NoActionBar"
+31-->C:\Users\Pichau\Downloads\ruy-pos-system\app\src\main\AndroidManifest.xml:4:101-164
+32        android:usesCleartextTraffic="false" >
+32-->C:\Users\Pichau\Downloads\ruy-pos-system\app\src\main\AndroidManifest.xml:4:165-201
+33        <activity
+33-->C:\Users\Pichau\Downloads\ruy-pos-system\app\src\main\AndroidManifest.xml:5:3-7:14
+34            android:name="br.com.ruy.pos.MainActivity"
+34-->C:\Users\Pichau\Downloads\ruy-pos-system\app\src\main\AndroidManifest.xml:5:13-41
+35            android:exported="true" >
+35-->C:\Users\Pichau\Downloads\ruy-pos-system\app\src\main\AndroidManifest.xml:5:42-65
+36            <intent-filter>
+36-->C:\Users\Pichau\Downloads\ruy-pos-system\app\src\main\AndroidManifest.xml:6:4-145
+37                <action android:name="android.intent.action.MAIN" />
+37-->C:\Users\Pichau\Downloads\ruy-pos-system\app\src\main\AndroidManifest.xml:6:19-70
+37-->C:\Users\Pichau\Downloads\ruy-pos-system\app\src\main\AndroidManifest.xml:6:27-68
+38
+39                <category android:name="android.intent.category.LAUNCHER" />
+39-->C:\Users\Pichau\Downloads\ruy-pos-system\app\src\main\AndroidManifest.xml:6:70-129
+39-->C:\Users\Pichau\Downloads\ruy-pos-system\app\src\main\AndroidManifest.xml:6:80-127
+40            </intent-filter>
+41        </activity>
+42
+43        <service
+43-->[androidx.room:room-runtime:2.6.1] C:\Users\Pichau\.gradle\caches\transforms-4\16b9a54ea3ef80e7c5bb00da29745093\transformed\room-runtime-2.6.1\AndroidManifest.xml:24:9-28:63
+44            android:name="androidx.room.MultiInstanceInvalidationService"
+44-->[androidx.room:room-runtime:2.6.1] C:\Users\Pichau\.gradle\caches\transforms-4\16b9a54ea3ef80e7c5bb00da29745093\transformed\room-runtime-2.6.1\AndroidManifest.xml:25:13-74
+45            android:directBootAware="true"
+45-->[androidx.room:room-runtime:2.6.1] C:\Users\Pichau\.gradle\caches\transforms-4\16b9a54ea3ef80e7c5bb00da29745093\transformed\room-runtime-2.6.1\AndroidManifest.xml:26:13-43
+46            android:exported="false" />
+46-->[androidx.room:room-runtime:2.6.1] C:\Users\Pichau\.gradle\caches\transforms-4\16b9a54ea3ef80e7c5bb00da29745093\transformed\room-runtime-2.6.1\AndroidManifest.xml:27:13-37
+47
+48        <provider
+48-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:29:9-37:20
+49            android:name="androidx.startup.InitializationProvider"
+49-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:30:13-67
+50            android:authorities="br.com.ruy.pos.androidx-startup"
+50-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:31:13-68
+51            android:exported="false" >
+51-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:32:13-37
+52            <meta-data
+52-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:34:13-36:52
+53                android:name="androidx.work.WorkManagerInitializer"
+53-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:35:17-68
+54                android:value="androidx.startup" />
+54-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:36:17-49
+55        </provider>
+56
+57        <service
+57-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:39:9-45:35
+58            android:name="androidx.work.impl.background.systemalarm.SystemAlarmService"
+58-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:40:13-88
+59            android:directBootAware="false"
+59-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:41:13-44
+60            android:enabled="@bool/enable_system_alarm_service_default"
+60-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:42:13-72
+61            android:exported="false" />
+61-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:43:13-37
+62        <service
+62-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:46:9-52:35
+63            android:name="androidx.work.impl.background.systemjob.SystemJobService"
+63-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:47:13-84
+64            android:directBootAware="false"
+64-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:48:13-44
+65            android:enabled="@bool/enable_system_job_service_default"
+65-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:49:13-70
+66            android:exported="true"
+66-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:50:13-36
+67            android:permission="android.permission.BIND_JOB_SERVICE" />
+67-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:51:13-69
+68        <service
+68-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:53:9-59:35
+69            android:name="androidx.work.impl.foreground.SystemForegroundService"
+69-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:54:13-81
+70            android:directBootAware="false"
+70-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:55:13-44
+71            android:enabled="@bool/enable_system_foreground_service_default"
+71-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:56:13-77
+72            android:exported="false" />
+72-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:57:13-37
+73
+74        <receiver
+74-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:61:9-66:35
+75            android:name="androidx.work.impl.utils.ForceStopRunnable$BroadcastReceiver"
+75-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:62:13-88
+76            android:directBootAware="false"
+76-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:63:13-44
+77            android:enabled="true"
+77-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:64:13-35
+78            android:exported="false" />
+78-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:65:13-37
+79        <receiver
+79-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:67:9-77:20
+80            android:name="androidx.work.impl.background.systemalarm.ConstraintProxy$BatteryChargingProxy"
+80-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:68:13-106
+81            android:directBootAware="false"
+81-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:69:13-44
+82            android:enabled="false"
+82-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:70:13-36
+83            android:exported="false" >
+83-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:71:13-37
+84            <intent-filter>
+84-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:73:13-76:29
+85                <action android:name="android.intent.action.ACTION_POWER_CONNECTED" />
+85-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:74:17-87
+85-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:74:25-84
+86                <action android:name="android.intent.action.ACTION_POWER_DISCONNECTED" />
+86-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:75:17-90
+86-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:75:25-87
+87            </intent-filter>
+88        </receiver>
+89        <receiver
+89-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:78:9-88:20
+90            android:name="androidx.work.impl.background.systemalarm.ConstraintProxy$BatteryNotLowProxy"
+90-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:79:13-104
+91            android:directBootAware="false"
+91-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:80:13-44
+92            android:enabled="false"
+92-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:81:13-36
+93            android:exported="false" >
+93-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:82:13-37
+94            <intent-filter>
+94-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:84:13-87:29
+95                <action android:name="android.intent.action.BATTERY_OKAY" />
+95-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:85:17-77
+95-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:85:25-74
+96                <action android:name="android.intent.action.BATTERY_LOW" />
+96-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:86:17-76
+96-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:86:25-73
+97            </intent-filter>
+98        </receiver>
+99        <receiver
+99-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:89:9-99:20
+100            android:name="androidx.work.impl.background.systemalarm.ConstraintProxy$StorageNotLowProxy"
+100-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:90:13-104
+101            android:directBootAware="false"
+101-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:91:13-44
+102            android:enabled="false"
+102-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:92:13-36
+103            android:exported="false" >
+103-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:93:13-37
+104            <intent-filter>
+104-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:95:13-98:29
+105                <action android:name="android.intent.action.DEVICE_STORAGE_LOW" />
+105-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:96:17-83
+105-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:96:25-80
+106                <action android:name="android.intent.action.DEVICE_STORAGE_OK" />
+106-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:97:17-82
+106-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:97:25-79
+107            </intent-filter>
+108        </receiver>
+109        <receiver
+109-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:100:9-109:20
+110            android:name="androidx.work.impl.background.systemalarm.ConstraintProxy$NetworkStateProxy"
+110-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:101:13-103
+111            android:directBootAware="false"
+111-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:102:13-44
+112            android:enabled="false"
+112-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:103:13-36
+113            android:exported="false" >
+113-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:104:13-37
+114            <intent-filter>
+114-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:106:13-108:29
+115                <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
+115-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:107:17-79
+115-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:107:25-76
+116            </intent-filter>
+117        </receiver>
+118        <receiver
+118-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:110:9-121:20
+119            android:name="androidx.work.impl.background.systemalarm.RescheduleReceiver"
+119-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:111:13-88
+120            android:directBootAware="false"
+120-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:112:13-44
+121            android:enabled="false"
+121-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:113:13-36
+122            android:exported="false" >
+122-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:114:13-37
+123            <intent-filter>
+123-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:116:13-120:29
+124                <action android:name="android.intent.action.BOOT_COMPLETED" />
+124-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:117:17-79
+124-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:117:25-76
+125                <action android:name="android.intent.action.TIME_SET" />
+125-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:118:17-73
+125-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:118:25-70
+126                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+126-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:119:17-81
+126-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:119:25-78
+127            </intent-filter>
+128        </receiver>
+129        <receiver
+129-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:122:9-131:20
+130            android:name="androidx.work.impl.background.systemalarm.ConstraintProxyUpdateReceiver"
+130-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:123:13-99
+131            android:directBootAware="false"
+131-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:124:13-44
+132            android:enabled="@bool/enable_system_alarm_service_default"
+132-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:125:13-72
+133            android:exported="false" >
+133-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:126:13-37
+134            <intent-filter>
+134-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:128:13-130:29
+135                <action android:name="androidx.work.impl.background.systemalarm.UpdateProxies" />
+135-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:129:17-98
+135-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:129:25-95
+136            </intent-filter>
+137        </receiver>
+138        <receiver
+138-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:132:9-142:20
+139            android:name="androidx.work.impl.diagnostics.DiagnosticsReceiver"
+139-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:133:13-78
+140            android:directBootAware="false"
+140-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:134:13-44
+141            android:enabled="true"
+141-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:135:13-35
+142            android:exported="true"
+142-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:136:13-36
+143            android:permission="android.permission.DUMP" >
+143-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:137:13-57
+144            <intent-filter>
+144-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:139:13-141:29
+145                <action android:name="androidx.work.diagnostics.REQUEST_DIAGNOSTICS" />
+145-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:140:17-88
+145-->[androidx.work:work-runtime:2.9.0] C:\Users\Pichau\.gradle\caches\transforms-4\a31572ae34fea1880ffdc8969aae545a\transformed\work-runtime-2.9.0\AndroidManifest.xml:140:25-85
+146            </intent-filter>
+147        </receiver>
+148    </application>
+149
+150</manifest>

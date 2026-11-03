@@ -1,0 +1,8 @@
+﻿ERROR: JAVA_HOME is not set and no 'java' command could be found in your PATH.
+gradlew.bat : O sistema não pode localizar o rótulo em lote especificado - fail
+No linha:4 caractere:1
++ & "C:\Users\Pichau\Downloads\ruy-pos-system\gradlew.bat" app:assemble ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (O sistema não p...cificado - fail:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
