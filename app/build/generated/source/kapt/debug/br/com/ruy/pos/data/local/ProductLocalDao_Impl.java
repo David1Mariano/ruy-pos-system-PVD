@@ -7,7 +7,6 @@ import androidx.room.CoroutinesRoom;
 import androidx.room.EntityInsertionAdapter;
 import androidx.room.RoomDatabase;
 import androidx.room.RoomSQLiteQuery;
-import androidx.room.SharedSQLiteStatement;
 import androidx.room.util.CursorUtil;
 import androidx.room.util.DBUtil;
 import androidx.sqlite.db.SupportSQLiteStatement;
@@ -31,8 +30,6 @@ public final class ProductLocalDao_Impl implements ProductLocalDao {
   private final RoomDatabase __db;
 
   private final EntityInsertionAdapter<ProductLocalEntity> __insertionAdapterOfProductLocalEntity;
-
-  private final SharedSQLiteStatement __preparedStmtOfDelete;
 
   public ProductLocalDao_Impl(@NonNull final RoomDatabase __db) {
     this.__db = __db;
@@ -71,14 +68,6 @@ public final class ProductLocalDao_Impl implements ProductLocalDao {
         }
       }
     };
-    this.__preparedStmtOfDelete = new SharedSQLiteStatement(__db) {
-      @Override
-      @NonNull
-      public String createQuery() {
-        final String _query = "DELETE FROM products_local WHERE id = ?";
-        return _query;
-      }
-    };
   }
 
   @Override
@@ -101,37 +90,8 @@ public final class ProductLocalDao_Impl implements ProductLocalDao {
   }
 
   @Override
-  public Object delete(final String id, final Continuation<? super Unit> $completion) {
-    return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
-      @Override
-      @NonNull
-      public Unit call() throws Exception {
-        final SupportSQLiteStatement _stmt = __preparedStmtOfDelete.acquire();
-        int _argIndex = 1;
-        if (id == null) {
-          _stmt.bindNull(_argIndex);
-        } else {
-          _stmt.bindString(_argIndex, id);
-        }
-        try {
-          __db.beginTransaction();
-          try {
-            _stmt.executeUpdateDelete();
-            __db.setTransactionSuccessful();
-            return Unit.INSTANCE;
-          } finally {
-            __db.endTransaction();
-          }
-        } finally {
-          __preparedStmtOfDelete.release(_stmt);
-        }
-      }
-    }, $completion);
-  }
-
-  @Override
   public Object getActive(final Continuation<? super List<ProductLocalEntity>> $completion) {
-    final String _sql = "SELECT * FROM products_local WHERE active = 1 ORDER BY name ASC";
+    final String _sql = "SELECT * FROM products_local WHERE active = 1 ORDER BY name";
     final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 0);
     final CancellationSignal _cancellationSignal = DBUtil.createCancellationSignal();
     return CoroutinesRoom.execute(__db, false, _cancellationSignal, new Callable<List<ProductLocalEntity>>() {
@@ -193,7 +153,7 @@ public final class ProductLocalDao_Impl implements ProductLocalDao {
 
   @Override
   public Object getAll(final Continuation<? super List<ProductLocalEntity>> $completion) {
-    final String _sql = "SELECT * FROM products_local ORDER BY name ASC";
+    final String _sql = "SELECT * FROM products_local ORDER BY name";
     final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 0);
     final CancellationSignal _cancellationSignal = DBUtil.createCancellationSignal();
     return CoroutinesRoom.execute(__db, false, _cancellationSignal, new Callable<List<ProductLocalEntity>>() {

@@ -7,7 +7,6 @@ import androidx.room.CoroutinesRoom;
 import androidx.room.EntityInsertionAdapter;
 import androidx.room.RoomDatabase;
 import androidx.room.RoomSQLiteQuery;
-import androidx.room.SharedSQLiteStatement;
 import androidx.room.util.CursorUtil;
 import androidx.room.util.DBUtil;
 import androidx.sqlite.db.SupportSQLiteStatement;
@@ -31,8 +30,6 @@ public final class CategoryDao_Impl implements CategoryDao {
   private final RoomDatabase __db;
 
   private final EntityInsertionAdapter<CategoryEntity> __insertionAdapterOfCategoryEntity;
-
-  private final SharedSQLiteStatement __preparedStmtOfDelete;
 
   public CategoryDao_Impl(@NonNull final RoomDatabase __db) {
     this.__db = __db;
@@ -61,14 +58,6 @@ public final class CategoryDao_Impl implements CategoryDao {
         statement.bindLong(4, _tmp);
       }
     };
-    this.__preparedStmtOfDelete = new SharedSQLiteStatement(__db) {
-      @Override
-      @NonNull
-      public String createQuery() {
-        final String _query = "DELETE FROM categories WHERE id = ?";
-        return _query;
-      }
-    };
   }
 
   @Override
@@ -91,37 +80,56 @@ public final class CategoryDao_Impl implements CategoryDao {
   }
 
   @Override
-  public Object delete(final String id, final Continuation<? super Unit> $completion) {
-    return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
+  public Object getActive(final Continuation<? super List<CategoryEntity>> $completion) {
+    final String _sql = "SELECT * FROM categories WHERE active = 1 ORDER BY name";
+    final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 0);
+    final CancellationSignal _cancellationSignal = DBUtil.createCancellationSignal();
+    return CoroutinesRoom.execute(__db, false, _cancellationSignal, new Callable<List<CategoryEntity>>() {
       @Override
       @NonNull
-      public Unit call() throws Exception {
-        final SupportSQLiteStatement _stmt = __preparedStmtOfDelete.acquire();
-        int _argIndex = 1;
-        if (id == null) {
-          _stmt.bindNull(_argIndex);
-        } else {
-          _stmt.bindString(_argIndex, id);
-        }
+      public List<CategoryEntity> call() throws Exception {
+        final Cursor _cursor = DBUtil.query(__db, _statement, false, null);
         try {
-          __db.beginTransaction();
-          try {
-            _stmt.executeUpdateDelete();
-            __db.setTransactionSuccessful();
-            return Unit.INSTANCE;
-          } finally {
-            __db.endTransaction();
+          final int _cursorIndexOfId = CursorUtil.getColumnIndexOrThrow(_cursor, "id");
+          final int _cursorIndexOfName = CursorUtil.getColumnIndexOrThrow(_cursor, "name");
+          final int _cursorIndexOfSortOrder = CursorUtil.getColumnIndexOrThrow(_cursor, "sortOrder");
+          final int _cursorIndexOfActive = CursorUtil.getColumnIndexOrThrow(_cursor, "active");
+          final List<CategoryEntity> _result = new ArrayList<CategoryEntity>(_cursor.getCount());
+          while (_cursor.moveToNext()) {
+            final CategoryEntity _item;
+            final String _tmpId;
+            if (_cursor.isNull(_cursorIndexOfId)) {
+              _tmpId = null;
+            } else {
+              _tmpId = _cursor.getString(_cursorIndexOfId);
+            }
+            final String _tmpName;
+            if (_cursor.isNull(_cursorIndexOfName)) {
+              _tmpName = null;
+            } else {
+              _tmpName = _cursor.getString(_cursorIndexOfName);
+            }
+            final int _tmpSortOrder;
+            _tmpSortOrder = _cursor.getInt(_cursorIndexOfSortOrder);
+            final boolean _tmpActive;
+            final int _tmp;
+            _tmp = _cursor.getInt(_cursorIndexOfActive);
+            _tmpActive = _tmp != 0;
+            _item = new CategoryEntity(_tmpId,_tmpName,_tmpSortOrder,_tmpActive);
+            _result.add(_item);
           }
+          return _result;
         } finally {
-          __preparedStmtOfDelete.release(_stmt);
+          _cursor.close();
+          _statement.release();
         }
       }
     }, $completion);
   }
 
   @Override
-  public Object getActive(final Continuation<? super List<CategoryEntity>> $completion) {
-    final String _sql = "SELECT * FROM categories WHERE active = 1 ORDER BY sortOrder ASC";
+  public Object getAll(final Continuation<? super List<CategoryEntity>> $completion) {
+    final String _sql = "SELECT * FROM categories ORDER BY name";
     final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 0);
     final CancellationSignal _cancellationSignal = DBUtil.createCancellationSignal();
     return CoroutinesRoom.execute(__db, false, _cancellationSignal, new Callable<List<CategoryEntity>>() {

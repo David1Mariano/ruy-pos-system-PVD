@@ -39,3 +39,34 @@ data class SyncQueueEntity(
     val lastAttemptAt: Long? = null,
     val createdAt: Long = System.currentTimeMillis()
 )
+
+@Entity(tableName = "tables")
+data class TableEntity(
+    @PrimaryKey val tableId: String,
+    val number: Int,
+    val status: String,
+    val openedAt: Long? = null,
+    val closedAt: Long? = null
+)
+
+@Entity(tableName = "table_orders")
+data class TableOrderEntity(
+    @PrimaryKey val comandaId: String,
+    val tableId: String,
+    val status: String,
+    val totalCents: Int = 0,
+    val openedAt: Long = System.currentTimeMillis(),
+    val closedAt: Long? = null
+)
+
+@Entity(tableName = "table_order_items")
+data class TableOrderItemEntity(
+    @PrimaryKey val itemId: String,
+    val comandaId: String,
+    val productId: String?,
+    val productName: String,
+    val unitCents: Int,
+    val qty: Int,
+    val addedAt: Long = System.currentTimeMillis()
+)
+

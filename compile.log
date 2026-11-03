@@ -1,0 +1,75 @@
+﻿> Task :app:checkKotlinGradlePluginConfigurationErrors
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :app:generateDebugResValues UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :app:mergeDebugResources UP-TO-DATE
+> Task :app:packageDebugResources UP-TO-DATE
+> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :app:processDebugMainManifest UP-TO-DATE
+> Task :app:processDebugManifest UP-TO-DATE
+> Task :app:processDebugManifestForPackage UP-TO-DATE
+> Task :app:processDebugResources UP-TO-DATE
+
+> Task :app:kaptGenerateStubsDebugKotlin FAILED
+cmd : e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/Products
+Screen.kt:104:5 Expecting a top level declaration
+No linha:4 caractere:1
++ cmd /c "cd /d C:\Users\Pichau\Downloads\ruy-pos-system && .\gradlew.b ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (e: file:///C:/U...vel declaration:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:104:19 Expecting a top level declaration
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:104:20 Expecting a top level declaration
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:104:24 Expecting a top level declaration
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:104:26 Expecting a top level declaration
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:109:5 Expecting a top level declaration
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:109:11 Expecting a top level declaration
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:109:12 Expecting a top level declaration
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:109:21 Expecting a top level declaration
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:109:23 Expecting a top level declaration
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:109:31 Expecting a top level declaration
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:109:32 Expecting a top level declaration
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:109:43 Expecting a top level declaration
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:109:44 Expecting a top level declaration
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:109:45 Expecting a top level declaration
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:109:47 Expecting a top level declaration
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:169:1 Expecting a top level declaration
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:kaptGenerateStubsDebugKotlin'.
+> A failure occurred while executing 
+org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 2s
+15 actionable tasks: 2 executed, 13 up-to-date

@@ -1,0 +1,135 @@
+﻿> Task :app:checkKotlinGradlePluginConfigurationErrors
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :app:generateDebugResValues UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :app:mergeDebugResources UP-TO-DATE
+> Task :app:packageDebugResources UP-TO-DATE
+> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :app:processDebugMainManifest UP-TO-DATE
+> Task :app:processDebugManifest UP-TO-DATE
+> Task :app:processDebugManifestForPackage UP-TO-DATE
+> Task :app:processDebugResources UP-TO-DATE
+
+> Task :app:kaptGenerateStubsDebugKotlin FAILED
+cmd : e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/Products
+Screen.kt:23:43 Expecting an expression
+No linha:4 caractere:1
++ cmd /c "cd /d C:\Users\Pichau\Downloads\ruy-pos-system && .\gradlew.b ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (e: file:///C:/U...g an expression:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:23:43 Expecting ')'
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:23:44 Unexpected tokens (use ';' to separate expressions on the same line)
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:24:44 Expecting an expression
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:24:44 Expecting ')'
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:24:45 Unexpected tokens (use ';' to separate expressions on the same line)
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:36:26 Expecting an expression
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:36:27 Expecting ')'
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:36:28 Unexpected tokens (use ';' to separate expressions on the same line)
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:39:22 Expecting an expression
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:39:22 Expecting ')'
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:39:23 Unexpected tokens (use ';' to separate expressions on the same line)
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:41:95 Expecting an expression
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:41:95 Expecting ')'
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:41:96 Unexpected tokens (use ';' to separate expressions on the same line)
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:43:97 Expecting an expression
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:43:97 Expecting ')'
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:43:98 Unexpected tokens (use ';' to separate expressions on the same line)
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:48:89 Expecting an element
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:48:90 Expecting ','
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:48:94 Expecting '"'
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:49:39 Expecting an element
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:51:40 Expecting an expression
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:51:40 Expecting ')'
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:51:41 Unexpected tokens (use ';' to separate expressions on the same line)
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:52:105 Unexpected tokens (use ';' to separate expressions on the same line)
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:54:21 Expecting an element
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:63:66 Expecting an expression
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:63:66 Expecting ')'
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:63:67 Unexpected tokens (use ';' to separate expressions on the same line)
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:68:36 Expecting an element
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:68:37 Unexpected tokens (use ';' to separate expressions on the same line)
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:73:71 Expecting an element
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:73:72 Unexpected tokens (use ';' to separate expressions on the same line)
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:74:22 Expecting ')'
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:84:153 Expecting an expression
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:84:153 Expecting ')'
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:84:154 Unexpected tokens (use ';' to separate expressions on the same line)
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:86:34 Expecting an expression
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:86:34 Expecting ')'
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:86:35 Unexpected tokens (use ';' to separate expressions on the same line)
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:92:36 Expecting an expression
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:92:37 Expecting ')'
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:92:38 Unexpected tokens (use ';' to separate expressions on the same line)
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:94:6 Expecting ')'
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:95:2 Expecting ')'
+e: file:///C:/Users/Pichau/Downloads/ruy-pos-system/app/src/main/java/br/com/ruy/pos/ui/screens/products/ProductsScreen
+.kt:95:2 Expecting '}'
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:kaptGenerateStubsDebugKotlin'.
+> A failure occurred while executing 
+org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 2s
+15 actionable tasks: 2 executed, 13 up-to-date
