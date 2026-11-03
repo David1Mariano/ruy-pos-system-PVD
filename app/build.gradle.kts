@@ -10,8 +10,8 @@ android {
         applicationId = "br.com.ruy.pos"
         minSdk = 23
         targetSdk = 34
-        versionCode = 14
-        versionName = "0.6.1"
+        versionCode = 15
+        versionName = "0.6.2"
     }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
     kotlinOptions { jvmTarget = "17" }
