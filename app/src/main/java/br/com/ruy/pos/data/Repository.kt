@@ -15,7 +15,7 @@ class Repository(context: Context) {
 
     suspend fun products() = productDao.getActive()
 
-    suspend fun saveOrder(totalCents: Int, items: List<Pair<String,Int>>, unitCents: Map<String,Int>): String {
+    suspend fun saveOrder(totalCents: Int, items: List<Pair<String,Int>>, unitCents: Map<String,Int>, deviceId: String?, operatorId: String?): String {
         val id = UUID.randomUUID().toString()
         val arr = JSONArray()
         items.forEach { (name, qty) ->
@@ -28,8 +28,8 @@ class Repository(context: Context) {
             syncStatus = "PENDING",
             itemsJson = arr.toString(),
             createdAt = System.currentTimeMillis(),
-            operatorId = null,
-            deviceId = null,
+            operatorId = operatorId,
+            deviceId = deviceId,
             stoneTransactionId = null
         )
         orderDao.insert(order)

@@ -72,30 +72,30 @@ class MainActivity : Activity() {
     }
     
     private fun home() {
-        base("PDV - Início")
+        base("PDV - In?cio")
         button("NOVA VENDA") { sales() }
-        button("SINCRONIZAR CATÁLOGO") { syncCatalog() }
-        button("HISTÓRICO") { history() }
+        button("SINCRONIZAR CAT?LOGO") { syncCatalog() }
+        button("HIST?RICO") { history() }
         button("SINCRONIZAR AGORA") { syncNow() }
-        button("DIAGNÓSTICO") { diag() }
-        button("CONFIGURAÇÕES") { config() }
-        label("Catálogo:  itens", 12f)
+        button("DIAGN?STICO") { diag() }
+        button("CONFIGURA??ES") { config() }
+        label("Cat?logo:  itens", 12f)
     }
     
     private fun diag() {
-        base("Diagnóstico")
+        base("Diagn?stico")
         val baseUrl = prefs.getString("sync_url","") ?: ""
         val cat = if(baseUrl.contains("/api/pos/orders")) baseUrl.replace("/api/pos/orders","/api/pos/catalog") else if(baseUrl.isNotEmpty()) baseUrl else ""
         label("URL: ", 11f)
-        label("Catálogo URL: ", 11f)
+        label("Cat?logo URL: ", 11f)
         label("Token: ", 11f)
-        button("TESTAR CONEXÃO") { testConnection(baseUrl) }
+        button("TESTAR CONEX?O") { testConnection(baseUrl) }
         button("VOLTAR") { home() }
     }
     
     private fun config() {
-        base("Configurações")
-        label("URL HTTPS homologação")
+        base("Configura??es")
+        label("URL HTTPS homologa??o")
         val url = EditText(this).apply { setText(prefs.getString("sync_url","https://api.ruycaldodecana.com.br/api/pos/orders")); hint="https://host/api/pos/orders"; setPadding(12,12,12,12) }
         root.addView(url)
         label("Token do terminal (Bearer)")
@@ -173,7 +173,7 @@ class MainActivity : Activity() {
                     runOnUiThread { 
                         products.clear(); unitPrice.clear()
                         list.filter { it.active }.forEach { p -> products.add(p); unitPrice[p.name]=p.priceCents }
-                        Toast.makeText(this,"Catálogo: ",Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this,"Cat?logo: ",Toast.LENGTH_SHORT).show()
                     }
                 } else {
                     runOnUiThread { Toast.makeText(this,"HTTP ",Toast.LENGTH_SHORT).show() }
@@ -188,7 +188,7 @@ class MainActivity : Activity() {
     
     private fun sales() {
         base("VENDA")
-        if(products.isEmpty()) label("Sem produtos. Sincronize catálogo.")
+        if(products.isEmpty()) label("Sem produtos. Sincronize cat?logo.")
         products.forEach { p -> button("+  | ") { cart[p.name] = (cart[p.name]?:0)+1; sales() } }
         label("CARRINHO", 18f)
         var total = 0
@@ -204,7 +204,7 @@ class MainActivity : Activity() {
             thread {
                 try {
                     val items = cart.map { it.key to it.value }
-                    val id = kotlinx.coroutines.runBlocking { repo.saveOrder(total, items, unitPrice) }
+                    val id = kotlinx.coroutines.runBlocking { repo.saveOrder(total, items, unitPrice, null, null) }
                     runOnUiThread { Toast.makeText(this,"Pedido  salvo (pendente)",Toast.LENGTH_SHORT).show(); cart.clear(); home() }
                 } catch(e: Exception) {
                     runOnUiThread { Toast.makeText(this,"Erro",Toast.LENGTH_SHORT).show() }
@@ -214,7 +214,7 @@ class MainActivity : Activity() {
         button("VOLTAR") { home() }
     }
     
-    private fun history() { base("HISTÓRICO"); label("(em construção)"); button("VOLTAR"){home()} }
+    private fun history() { base("HIST?RICO"); label("(em constru??o)"); button("VOLTAR"){home()} }
     
     private fun syncNow() {
         val url = prefs.getString("sync_url","") ?: ""
@@ -224,6 +224,6 @@ class MainActivity : Activity() {
         Toast.makeText(this,"Sincronizando agora...",Toast.LENGTH_SHORT).show()
         val work = OneTimeWorkRequestBuilder<SyncWorker>().build()
         WorkManager.getInstance(this).enqueue(work)
-        Handler(Looper.getMainLooper()).postDelayed({ Toast.makeText(this,"Sincronização agendada",Toast.LENGTH_SHORT).show() }, 800)
+        Handler(Looper.getMainLooper()).postDelayed({ Toast.makeText(this,"Sincroniza??o agendada",Toast.LENGTH_SHORT).show() }, 800)
     }
 }
