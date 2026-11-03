@@ -25,11 +25,39 @@ interface OrderDao {
 }
 
 @Dao
+interface CashSessionDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(session: CashSessionEntity)
+    @Query("SELECT * FROM cash_sessions WHERE status = 'ABERTO' LIMIT 1")
+    suspend fun getOpen(): CashSessionEntity?
+    @Query("UPDATE cash_sessions SET status = 'FECHADO', closedAt = :closedAt WHERE sessionId = :sessionId")
+    suspend fun close(sessionId: String, closedAt: Long)
+}
+
+@Dao
+interface CashMovementDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(movement: CashMovementEntity)
+    @Query("SELECT * FROM cash_movements WHERE sessionId = :sessionId ORDER BY createdAt")
+    suspend fun getBySession(sessionId: String): List<CashMovementEntity>
+}
+
+@Dao
+interface CashClosingDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(closing: CashClosingEntity)
+    @Query("SELECT * FROM cash_closings ORDER BY closedAt DESC")
+    suspend fun getAll(): List<CashClosingEntity>
+}
+
+@Dao
 interface PaymentDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(payment: PaymentEntity)
     @Query("SELECT * FROM payments WHERE orderId = :orderId ORDER BY createdAt DESC")
     suspend fun getByOrder(orderId: String): List<PaymentEntity>
+    @Query("SELECT * FROM payments ORDER BY createdAt DESC")
+    suspend fun getAll(): List<PaymentEntity>
 }
 
 @Dao

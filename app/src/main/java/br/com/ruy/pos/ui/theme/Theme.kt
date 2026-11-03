@@ -10,10 +10,12 @@ private val LightColors = lightColorScheme(
     secondary = RuyBlack,
     onSecondary = RuyWhite,
     background = RuyBackground,
-    onBackground = RuyBlack,
-    surface = RuyWhite,
-    onSurface = RuyBlack,
-    error = RuyRed
+    onBackground = RuyTextPrimary,
+    surface = RuySurface,
+    onSurface = RuyTextPrimary,
+    surfaceVariant = RuyLightGray,
+    outline = RuyBorder,
+    error = RuyError
 )
 
 @Composable
@@ -24,4 +26,5 @@ fun RuyPosTheme(content: @Composable () -> Unit) {
         content = content
     )
 }
+
 

@@ -3,22 +3,41 @@
 import android.graphics.BitmapFactory
 import android.widget.Toast
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import br.com.ruy.pos.data.Repository
 import br.com.ruy.pos.data.local.ProductLocalEntity
 import br.com.ruy.pos.ui.components.RuyCard
 import br.com.ruy.pos.ui.components.RuyHeader
+import br.com.ruy.pos.ui.components.RuyPriceText
 import br.com.ruy.pos.ui.components.RuyPrimaryButton
+import br.com.ruy.pos.ui.theme.RuyBackground
+import br.com.ruy.pos.ui.theme.RuyBorder
+import br.com.ruy.pos.ui.theme.RuyRed
+import br.com.ruy.pos.ui.theme.RuyTextPrimary
+import br.com.ruy.pos.ui.theme.RuyTextSecondary
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.Locale
@@ -30,6 +49,7 @@ fun SalesScreen(repo: Repository, onBack: () -> Unit, onOrderRegistered: (String
     var products by remember { mutableStateOf<List<ProductLocalEntity>>(emptyList()) }
     val cart = remember { mutableStateMapOf<String, Int>() }
     val unitPrice = remember { mutableStateMapOf<String, Int>() }
+    var search by remember { mutableStateOf("") }
     var registering by remember { mutableStateOf(false) }
 
     fun reais(c: Int): String = NumberFormat.getCurrencyInstance(Locale("pt", "BR")).format(c / 100.0)
@@ -42,85 +62,98 @@ fun SalesScreen(repo: Repository, onBack: () -> Unit, onOrderRegistered: (String
         recalc()
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        RuyHeader(title = "Vendas")
-        Column(modifier = Modifier.padding(12.dp)) {
-            Text(text = "Produtos", fontWeight = FontWeight.SemiBold)
-            LazyColumn(modifier = Modifier.heightIn(max = 220.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                items(products) { p ->
-                    RuyCard {
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Column {
-                                Text(text = p.name, fontWeight = FontWeight.Medium)
-                                Text(text = reais(p.priceCents))
-                                val bmp = remember(p.imagePath) {
-                                    val path = p.imagePath
-                                    if (path != null) try { BitmapFactory.decodeFile(path)?.asImageBitmap() } catch (e: Exception) { null } else null
-                                }
+    val filtered = products.filter { it.name.contains(search, ignoreCase = true) }
+
+    Column(modifier = Modifier.fillMaxSize().background(RuyBackground)) {
+        RuyHeader(title = "Vendas", subtitle = "Balcão / PDV")
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+            OutlinedTextField(
+                value = search,
+                onValueChange = { search = it },
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("Buscar produto...") },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                shape = RoundedCornerShape(12.dp),
+                singleLine = true
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            Text("Produtos", style = MaterialTheme.typography.titleSmall, color = RuyTextPrimary)
+            Spacer(modifier = Modifier.height(8.dp))
+            LazyVerticalGrid(columns = GridCells.Adaptive(minSize = 140.dp), modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                items(filtered) { p ->
+                    Card(
+                        onClick = {
+                            cart[p.name] = (cart[p.name] ?: 0) + 1
+                            recalc()
+                        },
+                        shape = RoundedCornerShape(14.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, RuyBorder)
+                    ) {
+                        Column(modifier = Modifier.padding(10.dp)) {
+                            val bmp = remember(p.imagePath) {
+                                val path = p.imagePath
+                                if (path != null) try { BitmapFactory.decodeFile(path)?.asImageBitmap() } catch (e: Exception) { null } else null
+                            }
+                            Box(modifier = Modifier.fillMaxWidth().height(80.dp).clip(RoundedCornerShape(10.dp)).background(RuyBackground)) {
                                 if (bmp != null) {
-                                    Image(bitmap = bmp, contentDescription = null, modifier = Modifier.width(80.dp).height(60.dp), contentScale = ContentScale.Crop)
+                                    Image(bitmap = bmp, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
                                 }
                             }
-                            TextButton(onClick = {
-                                cart[p.name] = (cart[p.name] ?: 0) + 1
-                                recalc()
-                            }) { Text(text = "+ Adicionar") }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(p.name, style = MaterialTheme.typography.bodyMedium, color = RuyTextPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            RuyPriceText(reais(p.priceCents))
                         }
                     }
                 }
             }
             Spacer(modifier = Modifier.height(10.dp))
-            Text(text = "Carrinho", fontWeight = FontWeight.SemiBold)
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                items(cart.toList()) { (name, qty) ->
-                    val up = unitPrice[name] ?: 0
-                    RuyCard {
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Column {
-                                Text(text = "$name x $qty", fontWeight = FontWeight.Medium)
-                                Text(text = reais(up * qty))
-                            }
-                            Row {
-                                TextButton(onClick = {
-                                    val n = (cart[name] ?: 0) - 1
-                                    if (n <= 0) cart.remove(name) else cart[name] = n
+            RuyCard {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Column {
+                        Text("Carrinho", style = MaterialTheme.typography.titleSmall)
+                        Text("${cart.values.sum()} itens", style = MaterialTheme.typography.bodySmall, color = RuyTextSecondary)
+                    }
+                    Text(reais(total), style = MaterialTheme.typography.titleMedium, color = RuyRed, fontWeight = FontWeight.SemiBold)
+                }
+                if (cart.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        items(cart.toList()) { (name, qty) ->
+                            AssistChip(onClick = {}, label = { Text("$name x$qty") })
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(10.dp))
+                if (cart.isNotEmpty()) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        RuyPrimaryButton(text = "Finalizar venda", onClick = {
+                            val items = cart.map { it.key to it.value }
+                            onCheckout(total, items, unitPrice)
+                        }, modifier = Modifier.weight(1f))
+                        FilledTonalButton(onClick = {
+                            registering = true
+                            scope.launch {
+                                try {
+                                    val items = cart.map { it.key to it.value }
+                                    val id = repo.saveOrder(total, items, unitPrice, null, null)
+                                    cart.clear()
                                     recalc()
-                                }) { Text(text = "-") }
+                                    Toast.makeText(context, "Pedido $id registrado", Toast.LENGTH_SHORT).show()
+                                    onOrderRegistered(id)
+                                } catch (e: Exception) {
+                                    Toast.makeText(context, "Erro: ${e.message}", Toast.LENGTH_SHORT).show()
+                                } finally {
+                                    registering = false
+                                }
                             }
+                        }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp)) {
+                            Text(if (registering) "Registrando..." else "Registrar pedido")
                         }
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(text = "TOTAL: " + reais(total), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
-            Spacer(modifier = Modifier.height(8.dp))
-            if (cart.isNotEmpty()) {
-                RuyPrimaryButton(text = "FINALIZAR VENDA", onClick = {
-                    val items = cart.map { it.key to it.value }
-                    onCheckout(total, items, unitPrice)
-                })
-                RuyPrimaryButton(text = "Registrar pedido (balcão)", onClick = {
-                    registering = true
-                    scope.launch {
-                        try {
-                            val items = cart.map { it.key to it.value }
-                            val id = repo.saveOrder(total, items, unitPrice, null, null)
-                            cart.clear()
-                            recalc()
-                            Toast.makeText(context, "Pedido $id registrado", Toast.LENGTH_LONG).show()
-                            onOrderRegistered(id)
-                        } catch (e: Exception) {
-                            Toast.makeText(context, "Erro ao registrar: " + e.message, Toast.LENGTH_LONG).show()
-                        } finally {
-                            registering = false
-                        }
-                    }
-                })
-            }
-            if (registering) {
-                RuyPrimaryButton(text = "Registrando...", onClick = {})
-            }
-            RuyPrimaryButton(text = "Voltar", onClick = onBack)
         }
     }
 }

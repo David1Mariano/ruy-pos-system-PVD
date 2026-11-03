@@ -31,4 +31,12 @@ object Migrations {
             db.execSQL("CREATE TABLE IF NOT EXISTS payments (paymentId TEXT PRIMARY KEY NOT NULL, orderId TEXT NOT NULL, amountCents INTEGER NOT NULL, method TEXT NOT NULL, status TEXT NOT NULL, receivedCents INTEGER, changeCents INTEGER, installments INTEGER NOT NULL DEFAULT 1, transactionRef TEXT, createdAt INTEGER NOT NULL)")
         }
     }
+    val MIGRATION_6_7 = object : Migration(6, 7) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("CREATE TABLE IF NOT EXISTS cash_sessions (sessionId TEXT PRIMARY KEY NOT NULL, operator TEXT NOT NULL, openedAt INTEGER NOT NULL, closedAt INTEGER, openingBalanceCents INTEGER NOT NULL, status TEXT NOT NULL)")
+            db.execSQL("CREATE TABLE IF NOT EXISTS cash_movements (movementId TEXT PRIMARY KEY NOT NULL, sessionId TEXT NOT NULL, type TEXT NOT NULL, amountCents INTEGER NOT NULL, reason TEXT, orderId TEXT, createdAt INTEGER NOT NULL)")
+            db.execSQL("CREATE TABLE IF NOT EXISTS cash_closings (closingId TEXT PRIMARY KEY NOT NULL, sessionId TEXT NOT NULL, closedAt INTEGER NOT NULL, expectedCashCents INTEGER NOT NULL, countedCashCents INTEGER NOT NULL, differenceCents INTEGER NOT NULL, totalSalesCents INTEGER NOT NULL, totalCashCents INTEGER NOT NULL, totalPixCents INTEGER NOT NULL, totalDebitCents INTEGER NOT NULL, totalCreditCents INTEGER NOT NULL, sangriasCents INTEGER NOT NULL, suppliesCents INTEGER NOT NULL, operator TEXT NOT NULL, note TEXT)")
+        }
+    }
 }
+

@@ -12,31 +12,52 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import br.com.ruy.pos.ui.theme.RuyBlack
+import br.com.ruy.pos.ui.theme.RuyBorder
 import br.com.ruy.pos.ui.theme.RuyRed
+import br.com.ruy.pos.ui.theme.RuyTextPrimary
+import br.com.ruy.pos.ui.theme.RuyTextSecondary
 import br.com.ruy.pos.ui.theme.RuyWhite
 
 @Composable
 fun RuyHeader(title: String, subtitle: String = "Ruy Caldo de Cana") {
     Column(
-        modifier = Modifier.fillMaxWidth().background(RuyWhite).padding(16.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(RuyWhite)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(text = title, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = RuyRed)
-        Text(text = subtitle, fontSize = 13.sp, color = RuyBlack)
-        Spacer(modifier = Modifier.height(4.dp))
-        Divider(color = RuyRed.copy(alpha = 0.2f))
+        Text(text = title, fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = RuyRed)
+        Text(text = subtitle, fontSize = 12.sp, color = RuyTextSecondary)
+        Spacer(modifier = Modifier.height(8.dp))
+        HorizontalDivider(color = RuyBorder)
     }
 }
 
 @Composable
-fun RuyPrimaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun RuyPrimaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
     Button(
         onClick = onClick,
         modifier = modifier.fillMaxWidth().height(52.dp),
-        shape = RoundedCornerShape(10.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = RuyRed, contentColor = RuyWhite)
+        enabled = enabled,
+        shape = RoundedCornerShape(12.dp),
+        colors = ButtonDefaults.buttonColors(containerColor = RuyRed, contentColor = RuyWhite, disabledContainerColor = RuyBorder, disabledContentColor = RuyTextSecondary)
     ) {
         Text(text = text, fontWeight = FontWeight.SemiBold)
+    }
+}
+
+@Composable
+fun RuySecondaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
+    OutlinedButton(
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth().height(52.dp),
+        enabled = enabled,
+        shape = RoundedCornerShape(12.dp),
+        border = ButtonDefaults.outlinedButtonBorder.copy(brush = androidx.compose.ui.graphics.SolidColor(RuyBorder)),
+        colors = ButtonDefaults.outlinedButtonColors(contentColor = RuyTextPrimary)
+    ) {
+        Text(text = text, fontWeight = FontWeight.Medium)
     }
 }
 
@@ -44,9 +65,22 @@ fun RuyPrimaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Mod
 fun RuyCard(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, RuyBorder)
     ) {
-        Column(modifier = Modifier.padding(12.dp), content = content)
+        Column(modifier = Modifier.padding(14.dp), content = content)
     }
 }
+
+@Composable
+fun RuySectionTitle(text: String) {
+    Text(text = text, style = MaterialTheme.typography.titleSmall, color = RuyTextPrimary)
+}
+
+@Composable
+fun RuyPriceText(text: String) {
+    Text(text = text, style = MaterialTheme.typography.titleSmall, color = RuyRed, fontWeight = FontWeight.SemiBold)
+}
+

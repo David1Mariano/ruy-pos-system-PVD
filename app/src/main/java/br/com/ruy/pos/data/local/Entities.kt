@@ -44,6 +44,46 @@ data class PaymentEntity(
     val createdAt: Long = System.currentTimeMillis()
 )
 
+@Entity(tableName = "cash_sessions")
+data class CashSessionEntity(
+    @PrimaryKey val sessionId: String,
+    val operator: String,
+    val openedAt: Long,
+    val closedAt: Long? = null,
+    val openingBalanceCents: Int,
+    val status: String
+)
+
+@Entity(tableName = "cash_movements")
+data class CashMovementEntity(
+    @PrimaryKey val movementId: String,
+    val sessionId: String,
+    val type: String,
+    val amountCents: Int,
+    val reason: String?,
+    val orderId: String?,
+    val createdAt: Long = System.currentTimeMillis()
+)
+
+@Entity(tableName = "cash_closings")
+data class CashClosingEntity(
+    @PrimaryKey val closingId: String,
+    val sessionId: String,
+    val closedAt: Long,
+    val expectedCashCents: Int,
+    val countedCashCents: Int,
+    val differenceCents: Int,
+    val totalSalesCents: Int,
+    val totalCashCents: Int,
+    val totalPixCents: Int,
+    val totalDebitCents: Int,
+    val totalCreditCents: Int,
+    val sangriasCents: Int,
+    val suppliesCents: Int,
+    val operator: String,
+    val note: String?
+)
+
 @Entity(tableName = "sync_queue")
 data class SyncQueueEntity(
     @PrimaryKey(autoGenerate = true) val rowId: Long = 0,
