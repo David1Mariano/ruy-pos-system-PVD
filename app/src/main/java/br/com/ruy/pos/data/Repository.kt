@@ -9,6 +9,7 @@ import br.com.ruy.pos.data.local.ProductLocalEntity
 import br.com.ruy.pos.data.local.TableEntity
 import br.com.ruy.pos.data.local.TableOrderEntity
 import br.com.ruy.pos.data.local.TableOrderItemEntity
+import br.com.ruy.pos.data.local.PaymentEntity
 import org.json.JSONArray
 import org.json.JSONObject
 import java.util.UUID
@@ -22,6 +23,7 @@ class Repository(context: Context) {
     private val tableDao = db.tableDao()
     private val tableOrderDao = db.tableOrderDao()
     private val tableOrderItemDao = db.tableOrderItemDao()
+    private val paymentDao = db.paymentDao()
 
     suspend fun products() = productDao.getActive()
     suspend fun categories() = categoryDao.getActive()
@@ -31,8 +33,8 @@ class Repository(context: Context) {
     suspend fun saveCategory(id: String, name: String) {
         categoryDao.insert(CategoryEntity(id = id, name = name, active = true))
     }
-    suspend fun saveProductLocal(id: String, categoryId: String?, name: String, priceCents: Int, active: Boolean = true) {
-        productLocalDao.insert(ProductLocalEntity(id = id, categoryId = categoryId, name = name, priceCents = priceCents, active = active))
+    suspend fun saveProductLocal(id: String, categoryId: String?, name: String, priceCents: Int, active: Boolean = true, imagePath: String? = null) {
+        productLocalDao.insert(ProductLocalEntity(id = id, categoryId = categoryId, name = name, priceCents = priceCents, active = active, imagePath = imagePath))
     }
 
     suspend fun saveOrder(totalCents: Int, items: List<Pair<String,Int>>, unitCents: Map<String,Int>, deviceId: String?, operatorId: String?): String {
@@ -59,6 +61,31 @@ class Repository(context: Context) {
     suspend fun pendingOrders() = orderDao.pending()
     suspend fun markSynced(id: String) = orderDao.updateSyncStatus(id, "SYNCED")
     suspend fun allOrders() = orderDao.all()
+
+    suspend fun savePayment(orderId: String, amountCents: Int, method: String, status: String, receivedCents: Int? = null, changeCents: Int? = null, installments: Int = 1, transactionRef: String? = null): String {
+        val pid = UUID.randomUUID().toString()
+        paymentDao.insert(PaymentEntity(paymentId = pid, orderId = orderId, amountCents = amountCents, method = method, status = status, receivedCents = receivedCents, changeCents = changeCents, installments = installments, transactionRef = transactionRef))
+        return pid
+    }
+
+    suspend fun getPayments(orderId: String) = paymentDao.getByOrder(orderId)
+
+    suspend fun closeComandaIfPaid(comandaId: String, totalCents: Int): Boolean {
+        val items = tableOrderItemDao.getItems(comandaId)
+        val total = if (items.isEmpty()) totalCents else items.sumOf { it.unitCents * it.qty }
+        // For now, mark as closed only if we have a confirmed payment flow - caller decides
+        return false
+    }
+
+    suspend fun markTableFree(tableId: String) {
+        tableDao.updateStatus(tableId, "LIVRE", null)
+    }
+
+    suspend fun closeComanda(comandaId: String) {
+        val items = tableOrderItemDao.getItems(comandaId)
+        val total = items.sumOf { it.unitCents * it.qty }
+        tableOrderDao.updateTotal(comandaId, total)
+    }
 
     suspend fun ensureTables(count: Int) {
         for (i in 1..count) {

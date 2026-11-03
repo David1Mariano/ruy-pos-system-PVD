@@ -37,7 +37,7 @@ public final class ProductLocalDao_Impl implements ProductLocalDao {
       @Override
       @NonNull
       protected String createQuery() {
-        return "INSERT OR REPLACE INTO `products_local` (`id`,`categoryId`,`name`,`priceCents`,`active`,`imageUrl`) VALUES (?,?,?,?,?,?)";
+        return "INSERT OR REPLACE INTO `products_local` (`id`,`categoryId`,`name`,`priceCents`,`active`,`imagePath`) VALUES (?,?,?,?,?,?)";
       }
 
       @Override
@@ -61,10 +61,10 @@ public final class ProductLocalDao_Impl implements ProductLocalDao {
         statement.bindLong(4, entity.getPriceCents());
         final int _tmp = entity.getActive() ? 1 : 0;
         statement.bindLong(5, _tmp);
-        if (entity.getImageUrl() == null) {
+        if (entity.getImagePath() == null) {
           statement.bindNull(6);
         } else {
-          statement.bindString(6, entity.getImageUrl());
+          statement.bindString(6, entity.getImagePath());
         }
       }
     };
@@ -105,7 +105,7 @@ public final class ProductLocalDao_Impl implements ProductLocalDao {
           final int _cursorIndexOfName = CursorUtil.getColumnIndexOrThrow(_cursor, "name");
           final int _cursorIndexOfPriceCents = CursorUtil.getColumnIndexOrThrow(_cursor, "priceCents");
           final int _cursorIndexOfActive = CursorUtil.getColumnIndexOrThrow(_cursor, "active");
-          final int _cursorIndexOfImageUrl = CursorUtil.getColumnIndexOrThrow(_cursor, "imageUrl");
+          final int _cursorIndexOfImagePath = CursorUtil.getColumnIndexOrThrow(_cursor, "imagePath");
           final List<ProductLocalEntity> _result = new ArrayList<ProductLocalEntity>(_cursor.getCount());
           while (_cursor.moveToNext()) {
             final ProductLocalEntity _item;
@@ -133,13 +133,13 @@ public final class ProductLocalDao_Impl implements ProductLocalDao {
             final int _tmp;
             _tmp = _cursor.getInt(_cursorIndexOfActive);
             _tmpActive = _tmp != 0;
-            final String _tmpImageUrl;
-            if (_cursor.isNull(_cursorIndexOfImageUrl)) {
-              _tmpImageUrl = null;
+            final String _tmpImagePath;
+            if (_cursor.isNull(_cursorIndexOfImagePath)) {
+              _tmpImagePath = null;
             } else {
-              _tmpImageUrl = _cursor.getString(_cursorIndexOfImageUrl);
+              _tmpImagePath = _cursor.getString(_cursorIndexOfImagePath);
             }
-            _item = new ProductLocalEntity(_tmpId,_tmpCategoryId,_tmpName,_tmpPriceCents,_tmpActive,_tmpImageUrl);
+            _item = new ProductLocalEntity(_tmpId,_tmpCategoryId,_tmpName,_tmpPriceCents,_tmpActive,_tmpImagePath);
             _result.add(_item);
           }
           return _result;
@@ -167,7 +167,7 @@ public final class ProductLocalDao_Impl implements ProductLocalDao {
           final int _cursorIndexOfName = CursorUtil.getColumnIndexOrThrow(_cursor, "name");
           final int _cursorIndexOfPriceCents = CursorUtil.getColumnIndexOrThrow(_cursor, "priceCents");
           final int _cursorIndexOfActive = CursorUtil.getColumnIndexOrThrow(_cursor, "active");
-          final int _cursorIndexOfImageUrl = CursorUtil.getColumnIndexOrThrow(_cursor, "imageUrl");
+          final int _cursorIndexOfImagePath = CursorUtil.getColumnIndexOrThrow(_cursor, "imagePath");
           final List<ProductLocalEntity> _result = new ArrayList<ProductLocalEntity>(_cursor.getCount());
           while (_cursor.moveToNext()) {
             final ProductLocalEntity _item;
@@ -195,13 +195,13 @@ public final class ProductLocalDao_Impl implements ProductLocalDao {
             final int _tmp;
             _tmp = _cursor.getInt(_cursorIndexOfActive);
             _tmpActive = _tmp != 0;
-            final String _tmpImageUrl;
-            if (_cursor.isNull(_cursorIndexOfImageUrl)) {
-              _tmpImageUrl = null;
+            final String _tmpImagePath;
+            if (_cursor.isNull(_cursorIndexOfImagePath)) {
+              _tmpImagePath = null;
             } else {
-              _tmpImageUrl = _cursor.getString(_cursorIndexOfImageUrl);
+              _tmpImagePath = _cursor.getString(_cursorIndexOfImagePath);
             }
-            _item = new ProductLocalEntity(_tmpId,_tmpCategoryId,_tmpName,_tmpPriceCents,_tmpActive,_tmpImageUrl);
+            _item = new ProductLocalEntity(_tmpId,_tmpCategoryId,_tmpName,_tmpPriceCents,_tmpActive,_tmpImagePath);
             _result.add(_item);
           }
           return _result;

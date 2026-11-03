@@ -14,6 +14,7 @@ import br.com.ruy.pos.data.Repository
 import br.com.ruy.pos.ui.components.RuyHeader
 import br.com.ruy.pos.ui.components.RuyPrimaryButton
 import br.com.ruy.pos.ui.screens.categories.CategoriesScreen
+import br.com.ruy.pos.ui.screens.checkout.CheckoutScreen
 import br.com.ruy.pos.ui.screens.orders.OrdersScreen
 import br.com.ruy.pos.ui.screens.products.ProductsScreen
 import br.com.ruy.pos.ui.screens.sales.SalesScreen
@@ -22,6 +23,7 @@ import br.com.ruy.pos.ui.screens.tables.TablesScreen
 @Composable
 fun RuyNavHost(repo: Repository, start: String = "home", onExit: () -> Unit) {
     var route by remember { mutableStateOf(start) }
+    var checkoutData by remember { mutableStateOf<CheckoutData?>(null) }
     when (route) {
         "home" -> HomeScreen(
             onSales = { route = "sales" },
@@ -31,8 +33,25 @@ fun RuyNavHost(repo: Repository, start: String = "home", onExit: () -> Unit) {
             onOrders = { route = "orders" },
             onBack = onExit
         )
-        "sales" -> SalesScreen(repo = repo, onBack = { route = "home" }, onOrderRegistered = { route = "orders" })
-        "tables" -> TablesScreen(repo = repo, onBack = { route = "home" })
+        "sales" -> SalesScreen(repo = repo, onBack = { route = "home" }, onOrderRegistered = { route = "orders" }, onCheckout = { total, items, up ->
+            checkoutData = CheckoutData(total, items, up, null, null)
+            route = "checkout"
+        })
+        "tables" -> TablesScreen(repo = repo, onBack = { route = "home" }, onCheckoutTable = { total, items, up, comandaId, tableId ->
+            checkoutData = CheckoutData(total, items, up, comandaId, tableId)
+            route = "checkout"
+        })
+        "checkout" -> {
+            val data = checkoutData
+            if (data != null) {
+                CheckoutScreen(repo = repo, totalCents = data.totalCents, items = data.items, unitPrice = data.unitPrice, comandaId = data.comandaId, tableId = data.tableId, onBack = { route = if (data.comandaId != null) "tables" else "sales" }, onPaidAndClosed = { route = "tables" })
+            } else {
+                SalesScreen(repo = repo, onBack = { route = "home" }, onOrderRegistered = { route = "orders" }, onCheckout = { total, items, up ->
+                    checkoutData = CheckoutData(total, items, up, null, null)
+                    route = "checkout"
+                })
+            }
+        }
         "products" -> ProductsScreen(repo = repo, onBack = { route = "home" })
         "categories" -> CategoriesScreen(repo = repo, onBack = { route = "home" })
         "orders" -> OrdersScreen(repo = repo, onBack = { route = "home" })
@@ -46,6 +65,14 @@ fun RuyNavHost(repo: Repository, start: String = "home", onExit: () -> Unit) {
         )
     }
 }
+
+data class CheckoutData(
+    val totalCents: Int,
+    val items: List<Pair<String, Int>>,
+    val unitPrice: Map<String, Int>,
+    val comandaId: String?,
+    val tableId: String?
+)
 
 @Composable
 private fun HomeScreen(
@@ -68,3 +95,4 @@ private fun HomeScreen(
         }
     }
 }
+

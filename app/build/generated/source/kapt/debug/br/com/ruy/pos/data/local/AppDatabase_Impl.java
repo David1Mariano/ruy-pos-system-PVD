@@ -40,21 +40,24 @@ public final class AppDatabase_Impl extends AppDatabase {
 
   private volatile TableOrderItemDao _tableOrderItemDao;
 
+  private volatile PaymentDao _paymentDao;
+
   @Override
   @NonNull
   protected SupportSQLiteOpenHelper createOpenHelper(@NonNull final DatabaseConfiguration config) {
-    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(4) {
+    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(6) {
       @Override
       public void createAllTables(@NonNull final SupportSQLiteDatabase db) {
         db.execSQL("CREATE TABLE IF NOT EXISTS `products` (`id` TEXT NOT NULL, `sku` TEXT, `name` TEXT NOT NULL, `category` TEXT, `priceCents` INTEGER NOT NULL, `active` INTEGER NOT NULL, `imageUrl` TEXT, `version` INTEGER NOT NULL, `updatedAt` TEXT, `unit` TEXT, PRIMARY KEY(`id`))");
         db.execSQL("CREATE TABLE IF NOT EXISTS `orders` (`id` TEXT NOT NULL, `totalCents` INTEGER NOT NULL, `paymentStatus` TEXT NOT NULL, `syncStatus` TEXT NOT NULL, `itemsJson` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, `operatorId` TEXT, `deviceId` TEXT, `stoneTransactionId` TEXT, PRIMARY KEY(`id`))");
         db.execSQL("CREATE TABLE IF NOT EXISTS `categories` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `sortOrder` INTEGER NOT NULL, `active` INTEGER NOT NULL, PRIMARY KEY(`id`))");
-        db.execSQL("CREATE TABLE IF NOT EXISTS `products_local` (`id` TEXT NOT NULL, `categoryId` TEXT, `name` TEXT NOT NULL, `priceCents` INTEGER NOT NULL, `active` INTEGER NOT NULL, `imageUrl` TEXT, PRIMARY KEY(`id`))");
+        db.execSQL("CREATE TABLE IF NOT EXISTS `products_local` (`id` TEXT NOT NULL, `categoryId` TEXT, `name` TEXT NOT NULL, `priceCents` INTEGER NOT NULL, `active` INTEGER NOT NULL, `imagePath` TEXT, PRIMARY KEY(`id`))");
         db.execSQL("CREATE TABLE IF NOT EXISTS `tables` (`tableId` TEXT NOT NULL, `number` INTEGER NOT NULL, `status` TEXT NOT NULL, `openedAt` INTEGER, `closedAt` INTEGER, PRIMARY KEY(`tableId`))");
         db.execSQL("CREATE TABLE IF NOT EXISTS `table_orders` (`comandaId` TEXT NOT NULL, `tableId` TEXT NOT NULL, `status` TEXT NOT NULL, `totalCents` INTEGER NOT NULL, `openedAt` INTEGER NOT NULL, `closedAt` INTEGER, PRIMARY KEY(`comandaId`))");
         db.execSQL("CREATE TABLE IF NOT EXISTS `table_order_items` (`itemId` TEXT NOT NULL, `comandaId` TEXT NOT NULL, `productId` TEXT, `productName` TEXT NOT NULL, `unitCents` INTEGER NOT NULL, `qty` INTEGER NOT NULL, `addedAt` INTEGER NOT NULL, PRIMARY KEY(`itemId`))");
+        db.execSQL("CREATE TABLE IF NOT EXISTS `payments` (`paymentId` TEXT NOT NULL, `orderId` TEXT NOT NULL, `amountCents` INTEGER NOT NULL, `method` TEXT NOT NULL, `status` TEXT NOT NULL, `receivedCents` INTEGER, `changeCents` INTEGER, `installments` INTEGER NOT NULL, `transactionRef` TEXT, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`paymentId`))");
         db.execSQL("CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)");
-        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '703b3e4b71bf331e240fbeef11542f5a')");
+        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '045510405c27eee51f4ec4ec52bf85f3')");
       }
 
       @Override
@@ -66,6 +69,7 @@ public final class AppDatabase_Impl extends AppDatabase {
         db.execSQL("DROP TABLE IF EXISTS `tables`");
         db.execSQL("DROP TABLE IF EXISTS `table_orders`");
         db.execSQL("DROP TABLE IF EXISTS `table_order_items`");
+        db.execSQL("DROP TABLE IF EXISTS `payments`");
         final List<? extends RoomDatabase.Callback> _callbacks = mCallbacks;
         if (_callbacks != null) {
           for (RoomDatabase.Callback _callback : _callbacks) {
@@ -168,7 +172,7 @@ public final class AppDatabase_Impl extends AppDatabase {
         _columnsProductsLocal.put("name", new TableInfo.Column("name", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsProductsLocal.put("priceCents", new TableInfo.Column("priceCents", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsProductsLocal.put("active", new TableInfo.Column("active", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
-        _columnsProductsLocal.put("imageUrl", new TableInfo.Column("imageUrl", "TEXT", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsProductsLocal.put("imagePath", new TableInfo.Column("imagePath", "TEXT", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
         final HashSet<TableInfo.ForeignKey> _foreignKeysProductsLocal = new HashSet<TableInfo.ForeignKey>(0);
         final HashSet<TableInfo.Index> _indicesProductsLocal = new HashSet<TableInfo.Index>(0);
         final TableInfo _infoProductsLocal = new TableInfo("products_local", _columnsProductsLocal, _foreignKeysProductsLocal, _indicesProductsLocal);
@@ -226,9 +230,29 @@ public final class AppDatabase_Impl extends AppDatabase {
                   + " Expected:\n" + _infoTableOrderItems + "\n"
                   + " Found:\n" + _existingTableOrderItems);
         }
+        final HashMap<String, TableInfo.Column> _columnsPayments = new HashMap<String, TableInfo.Column>(10);
+        _columnsPayments.put("paymentId", new TableInfo.Column("paymentId", "TEXT", true, 1, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsPayments.put("orderId", new TableInfo.Column("orderId", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsPayments.put("amountCents", new TableInfo.Column("amountCents", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsPayments.put("method", new TableInfo.Column("method", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsPayments.put("status", new TableInfo.Column("status", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsPayments.put("receivedCents", new TableInfo.Column("receivedCents", "INTEGER", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsPayments.put("changeCents", new TableInfo.Column("changeCents", "INTEGER", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsPayments.put("installments", new TableInfo.Column("installments", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsPayments.put("transactionRef", new TableInfo.Column("transactionRef", "TEXT", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsPayments.put("createdAt", new TableInfo.Column("createdAt", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        final HashSet<TableInfo.ForeignKey> _foreignKeysPayments = new HashSet<TableInfo.ForeignKey>(0);
+        final HashSet<TableInfo.Index> _indicesPayments = new HashSet<TableInfo.Index>(0);
+        final TableInfo _infoPayments = new TableInfo("payments", _columnsPayments, _foreignKeysPayments, _indicesPayments);
+        final TableInfo _existingPayments = TableInfo.read(db, "payments");
+        if (!_infoPayments.equals(_existingPayments)) {
+          return new RoomOpenHelper.ValidationResult(false, "payments(br.com.ruy.pos.data.local.PaymentEntity).\n"
+                  + " Expected:\n" + _infoPayments + "\n"
+                  + " Found:\n" + _existingPayments);
+        }
         return new RoomOpenHelper.ValidationResult(true, null);
       }
-    }, "703b3e4b71bf331e240fbeef11542f5a", "1c6fc8a00940cb9ab00ed1b8ad01afab");
+    }, "045510405c27eee51f4ec4ec52bf85f3", "9b69d4ca08d2c0996353993d9acf00c1");
     final SupportSQLiteOpenHelper.Configuration _sqliteConfig = SupportSQLiteOpenHelper.Configuration.builder(config.context).name(config.name).callback(_openCallback).build();
     final SupportSQLiteOpenHelper _helper = config.sqliteOpenHelperFactory.create(_sqliteConfig);
     return _helper;
@@ -239,7 +263,7 @@ public final class AppDatabase_Impl extends AppDatabase {
   protected InvalidationTracker createInvalidationTracker() {
     final HashMap<String, String> _shadowTablesMap = new HashMap<String, String>(0);
     final HashMap<String, Set<String>> _viewTables = new HashMap<String, Set<String>>(0);
-    return new InvalidationTracker(this, _shadowTablesMap, _viewTables, "products","orders","categories","products_local","tables","table_orders","table_order_items");
+    return new InvalidationTracker(this, _shadowTablesMap, _viewTables, "products","orders","categories","products_local","tables","table_orders","table_order_items","payments");
   }
 
   @Override
@@ -255,6 +279,7 @@ public final class AppDatabase_Impl extends AppDatabase {
       _db.execSQL("DELETE FROM `tables`");
       _db.execSQL("DELETE FROM `table_orders`");
       _db.execSQL("DELETE FROM `table_order_items`");
+      _db.execSQL("DELETE FROM `payments`");
       super.setTransactionSuccessful();
     } finally {
       super.endTransaction();
@@ -276,6 +301,7 @@ public final class AppDatabase_Impl extends AppDatabase {
     _typeConvertersMap.put(TableDao.class, TableDao_Impl.getRequiredConverters());
     _typeConvertersMap.put(TableOrderDao.class, TableOrderDao_Impl.getRequiredConverters());
     _typeConvertersMap.put(TableOrderItemDao.class, TableOrderItemDao_Impl.getRequiredConverters());
+    _typeConvertersMap.put(PaymentDao.class, PaymentDao_Impl.getRequiredConverters());
     return _typeConvertersMap;
   }
 
@@ -388,6 +414,20 @@ public final class AppDatabase_Impl extends AppDatabase {
           _tableOrderItemDao = new TableOrderItemDao_Impl(this);
         }
         return _tableOrderItemDao;
+      }
+    }
+  }
+
+  @Override
+  public PaymentDao paymentDao() {
+    if (_paymentDao != null) {
+      return _paymentDao;
+    } else {
+      synchronized(this) {
+        if(_paymentDao == null) {
+          _paymentDao = new PaymentDao_Impl(this);
+        }
+        return _paymentDao;
       }
     }
   }

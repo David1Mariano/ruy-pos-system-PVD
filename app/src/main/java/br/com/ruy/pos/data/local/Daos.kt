@@ -25,6 +25,14 @@ interface OrderDao {
 }
 
 @Dao
+interface PaymentDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(payment: PaymentEntity)
+    @Query("SELECT * FROM payments WHERE orderId = :orderId ORDER BY createdAt DESC")
+    suspend fun getByOrder(orderId: String): List<PaymentEntity>
+}
+
+@Dao
 interface SyncQueueDao {
     @Insert
     suspend fun enqueue(item: SyncQueueEntity): Long

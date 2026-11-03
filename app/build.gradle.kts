@@ -10,8 +10,8 @@ android {
         applicationId = "br.com.ruy.pos"
         minSdk = 23
         targetSdk = 34
-        versionCode = 17
-        versionName = "0.8.0"
+        versionCode = 19
+        versionName = "0.9.1"
     }
     buildFeatures {
         compose = true

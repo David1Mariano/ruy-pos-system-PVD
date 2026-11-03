@@ -10,5 +10,6 @@ data class ProductLocalEntity(
     val name: String,
     val priceCents: Int,
     val active: Boolean = true,
-    val imageUrl: String? = null
+    val imagePath: String? = null
 )
+

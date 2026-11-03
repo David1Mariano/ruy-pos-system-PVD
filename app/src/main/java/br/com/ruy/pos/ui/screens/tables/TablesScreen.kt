@@ -24,7 +24,7 @@ import java.text.NumberFormat
 import java.util.Locale
 
 @Composable
-fun TablesScreen(repo: Repository, onBack: () -> Unit) {
+fun TablesScreen(repo: Repository, onBack: () -> Unit, onCheckoutTable: (Int, List<Pair<String, Int>>, Map<String, Int>, String, String) -> Unit = { _, _, _, _, _ -> }) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     var tables by remember { mutableStateOf<List<TableEntity>>(emptyList()) }
@@ -34,6 +34,7 @@ fun TablesScreen(repo: Repository, onBack: () -> Unit) {
     var items by remember { mutableStateOf<List<TableOrderItemEntity>>(emptyList()) }
     var products by remember { mutableStateOf<List<br.com.ruy.pos.data.local.ProductLocalEntity>>(emptyList()) }
     var total by remember { mutableStateOf(0) }
+    val unitPrice = remember { mutableStateMapOf<String, Int>() }
     fun reais(c: Int): String = NumberFormat.getCurrencyInstance(Locale("pt", "BR")).format(c / 100.0)
 
     suspend fun refresh() {
@@ -48,6 +49,7 @@ fun TablesScreen(repo: Repository, onBack: () -> Unit) {
         repo.ensureTables(10)
         tables = repo.getTables()
         products = repo.productLocalAll().filter { it.active }
+        products.forEach { unitPrice[it.name] = it.priceCents }
     }
 
     if (selectedTable == null) {
@@ -132,8 +134,9 @@ fun TablesScreen(repo: Repository, onBack: () -> Unit) {
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(text = "TOTAL: ${reais(total)}", style = MaterialTheme.typography.titleLarge)
                 Spacer(modifier = Modifier.height(6.dp))
-                RuyPrimaryButton(text = "Iniciar fechamento", onClick = {
-                    Toast.makeText(context, "Fechamento iniciado. Pagamento não confirmado.", Toast.LENGTH_LONG).show()
+                RuyPrimaryButton(text = "Fechar conta / Finalizar", onClick = {
+                    val list = items.map { it.productName to it.qty }
+                    onCheckoutTable(total, list, unitPrice, comandaId ?: "", selectedTable!!.tableId)
                 })
                 RuyPrimaryButton(text = "Voltar às mesas", onClick = {
                     scope.launch {
@@ -148,3 +151,4 @@ fun TablesScreen(repo: Repository, onBack: () -> Unit) {
         }
     }
 }
+

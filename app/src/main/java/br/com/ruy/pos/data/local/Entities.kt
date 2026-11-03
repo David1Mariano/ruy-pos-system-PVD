@@ -30,6 +30,20 @@ data class OrderEntity(
     val stoneTransactionId: String?
 )
 
+@Entity(tableName = "payments")
+data class PaymentEntity(
+    @PrimaryKey val paymentId: String,
+    val orderId: String,
+    val amountCents: Int,
+    val method: String,
+    val status: String,
+    val receivedCents: Int? = null,
+    val changeCents: Int? = null,
+    val installments: Int = 1,
+    val transactionRef: String? = null,
+    val createdAt: Long = System.currentTimeMillis()
+)
+
 @Entity(tableName = "sync_queue")
 data class SyncQueueEntity(
     @PrimaryKey(autoGenerate = true) val rowId: Long = 0,

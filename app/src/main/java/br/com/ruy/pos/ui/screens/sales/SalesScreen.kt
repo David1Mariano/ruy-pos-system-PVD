@@ -1,12 +1,16 @@
 ﻿package br.com.ruy.pos.ui.screens.sales
 
+import android.graphics.BitmapFactory
 import android.widget.Toast
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -20,7 +24,7 @@ import java.text.NumberFormat
 import java.util.Locale
 
 @Composable
-fun SalesScreen(repo: Repository, onBack: () -> Unit, onOrderRegistered: (String) -> Unit = {}) {
+fun SalesScreen(repo: Repository, onBack: () -> Unit, onOrderRegistered: (String) -> Unit = {}, onCheckout: (Int, List<Pair<String, Int>>, Map<String, Int>) -> Unit = { _, _, _ -> }) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     var products by remember { mutableStateOf<List<ProductLocalEntity>>(emptyList()) }
@@ -49,6 +53,13 @@ fun SalesScreen(repo: Repository, onBack: () -> Unit, onOrderRegistered: (String
                             Column {
                                 Text(text = p.name, fontWeight = FontWeight.Medium)
                                 Text(text = reais(p.priceCents))
+                                val bmp = remember(p.imagePath) {
+                                    val path = p.imagePath
+                                    if (path != null) try { BitmapFactory.decodeFile(path)?.asImageBitmap() } catch (e: Exception) { null } else null
+                                }
+                                if (bmp != null) {
+                                    Image(bitmap = bmp, contentDescription = null, modifier = Modifier.width(80.dp).height(60.dp), contentScale = ContentScale.Crop)
+                                }
                             }
                             TextButton(onClick = {
                                 cart[p.name] = (cart[p.name] ?: 0) + 1
@@ -83,8 +94,12 @@ fun SalesScreen(repo: Repository, onBack: () -> Unit, onOrderRegistered: (String
             Spacer(modifier = Modifier.height(8.dp))
             Text(text = "TOTAL: " + reais(total), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
             Spacer(modifier = Modifier.height(8.dp))
-            if (cart.isNotEmpty() && !registering) {
-                RuyPrimaryButton(text = "Registrar pedido", onClick = {
+            if (cart.isNotEmpty()) {
+                RuyPrimaryButton(text = "FINALIZAR VENDA", onClick = {
+                    val items = cart.map { it.key to it.value }
+                    onCheckout(total, items, unitPrice)
+                })
+                RuyPrimaryButton(text = "Registrar pedido (balcão)", onClick = {
                     registering = true
                     scope.launch {
                         try {
@@ -109,3 +124,4 @@ fun SalesScreen(repo: Repository, onBack: () -> Unit, onOrderRegistered: (String
         }
     }
 }
+
