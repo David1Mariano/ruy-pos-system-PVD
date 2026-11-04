@@ -4,6 +4,10 @@ Data da entrega: 04/11/2026. Versão Android: **0.9.2 (20)**. Banco Room: **8**.
 
 **Não homologada no equipamento. Nenhuma cobrança real foi realizada.** Os testes são simulados com JUnit/Robolectric; não executam o aplicativo Stone, adquirente ou backend.
 
+**Auditoria de preparação em 04/11/2026:** package, versão, SHA-256 e assinaturas foram reconferidos sem reconstruir o APK. O remoto `origin/feature/premium-ui-redesign` foi consultado diretamente e confirmou `e0b08df8df54fa23f44ef394d4f39c84d6c27ae1`, contendo também `8d70535`.
+
+**Bloqueio para liberação:** o APK tem certificado Android Debug; o Manifest empacotado inclui `WAKE_LOCK` e `RECEIVE_BOOT_COMPLETED`, adicionadas por WorkManager 2.9.0 e listadas como proibidas pela Stone; a configuração de rede contém exceções de HTTP. Não foi localizado terminal por ADB. Ajustes, ID do pedido e disponibilidade do app Pagamento continuam **não verificados no equipamento**. O código de encerramento `2` não comprova estorno: não existe integração `cancel-app://cancel` nem baixa compensatória de estorno nesta versão. Consulte o [roteiro operacional, bloqueios e evidências de liberação](STONE-HOMOLOGATION-RUNBOOK.md).
+
 ## Estado encontrado
 
 - Branch `feature/premium-ui-redesign`, HEAD inicial `88dbf77`, sem commits locais à frente do upstream informado pelo Git.
@@ -30,6 +34,7 @@ Checkout, lista de pedidos e movimentações do Caixa observam `Flow` do Room. O
 - Índice único de `activeSlot` mantém uma tentativa em andamento por terminal. Cliques concorrentes e outros meios de pagamento também são bloqueados enquanto houver pendência. ATK tem controle de unicidade e conferência contra recebimentos anteriores.
 - Falha comprovada de abertura encerra como `NAO_INICIADO`. Falha ambígua mantém bloqueio e conciliação. Uma falha tardia não sobrescreve callback já persistido.
 - Ausência de retorno por dois minutos de relógio local marca resultado indeterminado, mantendo o bloqueio. Esse prazo é uma política do Ruy POS, sem inferir cancelamento Stone.
+- A verificação desse prazo ocorre enquanto `PosActivity` está em estado STARTED, a cada 30 segundos. Com o app interrompido, a tentativa continua persistida/bloqueada e será reavaliada ao retornar; não há um temporizador independente do processo.
 - Reiniciar ou interromper o app preserva pedido/pagamento/tentativa. A tentativa ativa é recuperada no checkout; também há acesso por Pedidos e pelo aviso de pagamento pendente. A recuperação nunca relança a cobrança automaticamente.
 
 ## Disponibilidade e Ajustes Stone
@@ -79,6 +84,8 @@ Valores seguem em centavos inteiros, positivos, com limite de 999999999 e ediç�
 
 O comportamento Pix/QR do equipamento e sua diferença em relação ao QR de outros meios precisam ser conferidos com a Stone; não se presume que exibir um QR finalize pagamento.
 
+A FAQ oficial distingue QR como forma de pagamento do tipo de transação e registra mudanças em relação ao antigo uso de `INSTANT_PAYMENT`. O reconhecimento desse enum no parser não certifica que ele seja o parâmetro correto para Pix no terminal. O checkout envia `PIX`; a homologação deve registrar o fluxo e o tipo efetivamente retornados no modelo/versão testados.
+
 ## Verificação automatizada e build
 
 Comando de validação final:
@@ -90,6 +97,8 @@ git diff --cached --check
 ```
 
 Resultado executado nesta entrega: **58 testes, zero falhas, zero erros e zero ignorados**. Build limpo concluído com `BUILD SUCCESSFUL` e 48 tarefas executadas. `git diff --check` e a conferência do índice passaram. APK verificado pelo `apksigner` com assinaturas v1/v2 válidas.
+
+Esses resultados se referem à implementação `e0b08df`; nesta preparação os relatórios XML/log e o APK foram auditados, sem repetir o build nem os testes da aplicação. A verificação criptográfica foi repetida. Assinatura válida comprova integridade/identidade do signatário, sem comprovar aceitação pela Stone. Hardware real: **zero testes executados**.
 
 APK: `artifacts/RuyPOS-0.9.2-Stone-debug.apk` (17.428.180 bytes).
 
