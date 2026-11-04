@@ -24,7 +24,6 @@ import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import java.util.UUID
 
 @Composable
 fun CashRegisterScreen(repo: Repository, onBack: () -> Unit) {
@@ -40,15 +39,19 @@ fun CashRegisterScreen(repo: Repository, onBack: () -> Unit) {
     var sangria by remember { mutableStateOf("") }
     var supply by remember { mutableStateOf("") }
     var counted by remember { mutableStateOf("") }
+    var busy by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         openSession = repo.getOpenCashSession()
         openSession?.let { movements = repo.getCashMovements(it.sessionId) }
         closings = repo.getCashClosings()
     }
+    LaunchedEffect(openSession?.sessionId) {
+        openSession?.let { session -> repo.observeCashMovements(session.sessionId).collect { movements = it } }
+    }
 
     Column(modifier = Modifier.fillMaxSize().background(RuyBackground)) {
-        RuyHeader(title = "Caixa", subtitle = "Abertura, movimentaÁıes e fechamento")
+        RuyHeader(title = "Caixa", subtitle = "Abertura, movimenta√ß√µes e fechamento")
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
             if (openSession == null) {
                 RuyCard {
@@ -58,25 +61,30 @@ fun CashRegisterScreen(repo: Repository, onBack: () -> Unit) {
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(value = opening, onValueChange = { opening = it }, label = { Text("Saldo inicial (centavos)") }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp))
                     Spacer(modifier = Modifier.height(10.dp))
-                    RuyPrimaryButton(text = "Abrir sess„o", onClick = {
+                    RuyPrimaryButton(text = "Abrir sess√£o", enabled = !busy, onClick = {
+                        if (busy) return@RuyPrimaryButton
+                        busy = true
                         scope.launch {
-                            repo.openCashSession(operator, opening.toIntOrNull() ?: 0)
-                            openSession = repo.getOpenCashSession()
-                            openSession?.let { movements = repo.getCashMovements(it.sessionId) }
-                            Toast.makeText(context, "Caixa aberto", Toast.LENGTH_SHORT).show()
+                            try {
+                                repo.openCashSession(operator, requireNotNull(opening.toIntOrNull()) { "Saldo inicial inv√°lido" })
+                                openSession = repo.getOpenCashSession()
+                                openSession?.let { movements = repo.getCashMovements(it.sessionId) }
+                                Toast.makeText(context, "Caixa aberto", Toast.LENGTH_SHORT).show()
+                            } catch (e: Exception) { Toast.makeText(context, e.message, Toast.LENGTH_LONG).show() }
+                            finally { busy = false }
                         }
                     })
                 }
             } else {
                 RuyCard {
-                    Text("Sess„o aberta", style = MaterialTheme.typography.titleSmall)
+                    Text("Sess√£o aberta", style = MaterialTheme.typography.titleSmall)
                     Text("Operador: ${openSession!!.operator}", style = MaterialTheme.typography.bodySmall, color = RuyTextSecondary)
                     Text("Abertura: ${sdf.format(Date(openSession!!.openedAt))}", style = MaterialTheme.typography.bodySmall, color = RuyTextSecondary)
                     Text("Saldo inicial: ${reais(openSession!!.openingBalanceCents)}", style = MaterialTheme.typography.bodySmall)
                 }
                 Spacer(modifier = Modifier.height(10.dp))
                 RuyCard {
-                    Text("MovimentaÁıes", style = MaterialTheme.typography.titleSmall)
+                    Text("Movimenta√ß√µes", style = MaterialTheme.typography.titleSmall)
                     Spacer(modifier = Modifier.height(6.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedTextField(value = sangria, onValueChange = { sangria = it }, label = { Text("Sangria (centavos)") }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp))
@@ -110,28 +118,27 @@ fun CashRegisterScreen(repo: Repository, onBack: () -> Unit) {
                     Spacer(modifier = Modifier.height(6.dp))
                     OutlinedTextField(value = counted, onValueChange = { counted = it }, label = { Text("Dinheiro contado (centavos)") }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp))
                     Spacer(modifier = Modifier.height(10.dp))
-                    RuyPrimaryButton(text = "Fechar caixa", onClick = {
+                    RuyPrimaryButton(text = "Fechar caixa", enabled = !busy, onClick = {
+                        if (busy) return@RuyPrimaryButton
+                        busy = true
                         scope.launch {
-                            val sangrias = movements.filter { it.type == "SANGRIA" }.sumOf { it.amountCents }
-                            val supplies = movements.filter { it.type == "SUPRIMENTO" }.sumOf { it.amountCents }
-                            val expected = (openSession!!.openingBalanceCents + supplies - sangrias)
-                            val cnt = counted.toIntOrNull() ?: 0
-                            val diff = cnt - expected
-                            val cid = UUID.randomUUID().toString()
-                            repo.saveCashClosing(CashClosingEntity(cid, openSession!!.sessionId, System.currentTimeMillis(), expected, cnt, diff, 0, expected, 0, 0, 0, sangrias, supplies, openSession!!.operator, null))
-                            repo.closeCashSession(openSession!!.sessionId)
-                            openSession = null
-                            movements = emptyList()
-                            closings = repo.getCashClosings()
-                            Toast.makeText(context, "Caixa fechado. DiferenÁa: ${reais(diff)}", Toast.LENGTH_LONG).show()
+                            try {
+                                val closing = repo.payments.closeCash(openSession!!.sessionId, requireNotNull(counted.toIntOrNull()) { "Informe o dinheiro contado" })
+                                openSession = null
+                                movements = emptyList()
+                                closings = repo.getCashClosings()
+                                Toast.makeText(context, "Caixa fechado. Diferen√ßa: ${reais(closing.differenceCents)}", Toast.LENGTH_LONG).show()
+                            } catch (e: Exception) {
+                                Toast.makeText(context, e.message ?: "Falha no fechamento", Toast.LENGTH_LONG).show()
+                            } finally { busy = false }
                         }
                     })
                 }
             }
             Spacer(modifier = Modifier.height(10.dp))
-            Text("HistÛrico de fechamentos", style = MaterialTheme.typography.titleSmall)
+            Text("Hist√≥rico de fechamentos", style = MaterialTheme.typography.titleSmall)
             LazyColumn(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                items(closings) { c -> RuyCard { Text("Fechamento ${c.closingId.take(6)} - DiferenÁa: ${reais(c.differenceCents)}", style = MaterialTheme.typography.bodySmall) } }
+                items(closings) { c -> RuyCard { Text("Fechamento ${c.closingId.take(6)} - Diferen√ßa: ${reais(c.differenceCents)}", style = MaterialTheme.typography.bodySmall) } }
             }
             Spacer(modifier = Modifier.height(8.dp))
             RuyPrimaryButton(text = "Voltar", onClick = onBack)

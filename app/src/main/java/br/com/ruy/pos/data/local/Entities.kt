@@ -17,7 +17,7 @@ data class ProductEntity(
     val unit: String?
 )
 
-@Entity(tableName = "orders")
+@Entity(tableName = "orders", indices = [androidx.room.Index(value = ["comandaId"], unique = true)])
 data class OrderEntity(
     @PrimaryKey val id: String,
     val totalCents: Int,
@@ -27,7 +27,8 @@ data class OrderEntity(
     val createdAt: Long,
     val operatorId: String?,
     val deviceId: String?,
-    val stoneTransactionId: String?
+    val stoneTransactionId: String?,
+    val comandaId: String? = null
 )
 
 @Entity(tableName = "payments")
@@ -41,7 +42,8 @@ data class PaymentEntity(
     val changeCents: Int? = null,
     val installments: Int = 1,
     val transactionRef: String? = null,
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    val cashSessionId: String? = null
 )
 
 @Entity(tableName = "cash_sessions")

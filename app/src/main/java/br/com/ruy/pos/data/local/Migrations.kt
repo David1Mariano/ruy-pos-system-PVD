@@ -4,6 +4,18 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
 object Migrations {
+    val MIGRATION_7_8 = object : Migration(7, 8) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE orders ADD COLUMN comandaId TEXT")
+            db.execSQL("CREATE UNIQUE INDEX index_orders_comandaId ON orders(comandaId)")
+            db.execSQL("ALTER TABLE payments ADD COLUMN cashSessionId TEXT")
+            db.execSQL("CREATE TABLE stone_attempts (stoneOrderId INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, attemptId TEXT NOT NULL, paymentId TEXT NOT NULL, orderId TEXT NOT NULL, installmentType TEXT NOT NULL, origin TEXT NOT NULL, state TEXT NOT NULL, activeSlot INTEGER, atk TEXT, itk TEXT, authorizationCode TEXT, authorizationDateTime TEXT, returnCode TEXT, detail TEXT, createdAt INTEGER NOT NULL, updatedAt INTEGER NOT NULL, reconciledBy TEXT, reconciliationEvidence TEXT)")
+            for (field in listOf("attemptId", "paymentId", "activeSlot", "atk")) {
+                db.execSQL("CREATE UNIQUE INDEX index_stone_attempts_$field ON stone_attempts($field)")
+            }
+            db.execSQL("CREATE TABLE stone_callback_events (fingerprint TEXT PRIMARY KEY NOT NULL, attemptId TEXT, result TEXT NOT NULL, safeFields TEXT, createdAt INTEGER NOT NULL)")
+        }
+    }
     val MIGRATION_1_2 = object : Migration(1, 2) {
         override fun migrate(db: SupportSQLiteDatabase) {
         }

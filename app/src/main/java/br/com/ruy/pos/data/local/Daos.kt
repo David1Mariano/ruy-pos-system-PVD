@@ -14,6 +14,15 @@ interface ProductDao {
 
 @Dao
 interface OrderDao {
+    @Query("SELECT * FROM orders WHERE id = :id")
+    suspend fun byId(id: String): OrderEntity?
+    @Query("SELECT * FROM orders WHERE comandaId = :comandaId LIMIT 1")
+    suspend fun byComanda(comandaId: String): OrderEntity?
+    @Query("SELECT * FROM orders WHERE id = :id")
+    fun observe(id: String): kotlinx.coroutines.flow.Flow<OrderEntity?>
+    @Query("SELECT * FROM orders ORDER BY createdAt DESC")
+    fun observeAll(): kotlinx.coroutines.flow.Flow<List<OrderEntity>>
+    @Update suspend fun update(order: OrderEntity)
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(order: OrderEntity)
     @Query("SELECT * FROM orders WHERE syncStatus = 'PENDING' ORDER BY createdAt")
@@ -36,10 +45,12 @@ interface CashSessionDao {
 
 @Dao
 interface CashMovementDao {
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert
     suspend fun insert(movement: CashMovementEntity)
     @Query("SELECT * FROM cash_movements WHERE sessionId = :sessionId ORDER BY createdAt")
     suspend fun getBySession(sessionId: String): List<CashMovementEntity>
+    @Query("SELECT * FROM cash_movements WHERE sessionId = :sessionId ORDER BY createdAt")
+    fun observe(sessionId: String): kotlinx.coroutines.flow.Flow<List<CashMovementEntity>>
 }
 
 @Dao
@@ -52,12 +63,17 @@ interface CashClosingDao {
 
 @Dao
 interface PaymentDao {
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert
     suspend fun insert(payment: PaymentEntity)
     @Query("SELECT * FROM payments WHERE orderId = :orderId ORDER BY createdAt DESC")
     suspend fun getByOrder(orderId: String): List<PaymentEntity>
     @Query("SELECT * FROM payments ORDER BY createdAt DESC")
     suspend fun getAll(): List<PaymentEntity>
+    @Query("SELECT * FROM payments WHERE paymentId = :id")
+    suspend fun byId(id: String): PaymentEntity?
+    @Update suspend fun update(payment: PaymentEntity)
+    @Query("SELECT * FROM payments WHERE orderId = :orderId ORDER BY createdAt DESC")
+    fun observe(orderId: String): kotlinx.coroutines.flow.Flow<List<PaymentEntity>>
 }
 
 @Dao
@@ -94,16 +110,22 @@ interface ProductLocalDao {
 
 @Dao
 interface TableDao {
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun upsertTable(table: TableEntity)
     @Query("SELECT * FROM tables ORDER BY number")
     suspend fun getAll(): List<TableEntity>
+    @Query("SELECT * FROM tables WHERE tableId = :id")
+    suspend fun byId(id: String): TableEntity?
+    @Query("SELECT * FROM tables ORDER BY number")
+    fun observeAll(): kotlinx.coroutines.flow.Flow<List<TableEntity>>
     @Query("UPDATE tables SET status = :status, openedAt = :openedAt WHERE tableId = :tableId")
     suspend fun updateStatus(tableId: String, status: String, openedAt: Long?)
 }
 
 @Dao
 interface TableOrderDao {
+    @Query("SELECT * FROM table_orders WHERE comandaId = :id")
+    suspend fun byId(id: String): TableOrderEntity?
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(comanda: TableOrderEntity)
     @Query("SELECT * FROM table_orders WHERE tableId = :tableId AND status = 'ABERTA' LIMIT 1")
@@ -112,6 +134,8 @@ interface TableOrderDao {
     suspend fun getOpen(): List<TableOrderEntity>
     @Query("UPDATE table_orders SET totalCents = :totalCents WHERE comandaId = :comandaId")
     suspend fun updateTotal(comandaId: String, totalCents: Int)
+    @Query("UPDATE table_orders SET status = :status, closedAt = :closedAt WHERE comandaId = :comandaId")
+    suspend fun updateStatus(comandaId: String, status: String, closedAt: Long?)
 }
 
 @Dao

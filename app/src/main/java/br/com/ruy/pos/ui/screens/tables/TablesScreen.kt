@@ -49,10 +49,10 @@ fun TablesScreen(repo: Repository, onBack: () -> Unit, onCheckoutTable: (Int, Li
 
     LaunchedEffect(Unit) {
         repo.ensureTables(10)
-        tables = repo.getTables()
         products = repo.productLocalAll().filter { it.active }
         products.forEach { unitPrice[it.name] = it.priceCents }
     }
+    LaunchedEffect(Unit) { repo.observeTables().collect { tables = it } }
 
     if (selectedTable == null) {
         Column(modifier = Modifier.fillMaxSize().background(RuyBackground)) {
@@ -120,7 +120,11 @@ fun TablesScreen(repo: Repository, onBack: () -> Unit, onCheckoutTable: (Int, Li
                                 FilledTonalButton(onClick = {
                                     scope.launch {
                                         comandaId?.let { cid ->
-                                            repo.addItemToComanda(cid, p.name, p.priceCents, 1, p.id)
+                                            try { repo.addItemToComanda(cid, p.name, p.priceCents, 1, p.id) }
+                                            catch (e: IllegalStateException) {
+                                                Toast.makeText(context, e.message, Toast.LENGTH_LONG).show()
+                                                return@launch
+                                            }
                                             items = repo.getComandaItems(cid)
                                             total = repo.getComandaTotal(cid)
                                             Toast.makeText(context, "Adicionado", Toast.LENGTH_SHORT).show()

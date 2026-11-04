@@ -13,9 +13,42 @@ import br.com.ruy.pos.data.local.PaymentEntity
 import org.json.JSONArray
 import org.json.JSONObject
 import java.util.UUID
+import androidx.room.withTransaction
+import br.com.ruy.pos.payment.PaymentCoordinator
 
-class Repository(context: Context) {
-    private val db = AppDatabase.get(context)
+class Repository internal constructor(private val db: AppDatabase) {
+    constructor(context: Context) : this(AppDatabase.get(context))
+    val payments = PaymentCoordinator(db)
+    fun observeOrders() = orderDao.observeAll()
+    fun observeTables() = tableDao.observeAll()
+    fun observeCashMovements(sessionId: String) = db.cashMovementDao().observe(sessionId)
+    suspend fun getOrder(id: String) = orderDao.byId(id)
+    suspend fun getComanda(id: String) = tableOrderDao.byId(id)
+
+    suspend fun prepareCheckout(totalCents: Int, items: List<Pair<String, Int>>, unitCents: Map<String, Int>,
+                                comandaId: String? = null, existingOrderId: String? = null): String = db.withTransaction {
+        existingOrderId?.let { return@withTransaction requireNotNull(orderDao.byId(it)).id }
+        comandaId?.let { id ->
+            val comanda = requireNotNull(tableOrderDao.byId(id)) { "Comanda não encontrada" }
+            check(comanda.status == "ABERTA") { "Comanda já encerrada" }
+            orderDao.byComanda(id)?.let { return@withTransaction it.id }
+            val savedItems = tableOrderItemDao.getItems(id)
+            val total = savedItems.sumOf { it.unitCents.toLong() * it.qty }
+            require(total in 1..Int.MAX_VALUE.toLong() && total == totalCents.toLong()) { "Total da comanda divergente" }
+            val orderId = saveOrder(totalCents, savedItems.map { it.productName to it.qty },
+                savedItems.associate { it.productName to it.unitCents }, null, null)
+            val order = requireNotNull(orderDao.byId(orderId))
+            // Preserve each historical price rather than the current product catalog price.
+            val arr = JSONArray()
+            savedItems.forEach { arr.put(JSONObject().put("name", it.productName).put("qty", it.qty).put("unitCents", it.unitCents)) }
+            orderDao.update(order.copy(comandaId = id, itemsJson = arr.toString()))
+            return@withTransaction orderId
+        }
+        require(totalCents > 0 && items.sumOf { (name, qty) -> (unitCents[name] ?: 0).toLong() * qty } == totalCents.toLong()) {
+            "Itens e total do pedido divergem"
+        }
+        saveOrder(totalCents, items, unitCents, null, null)
+    }
     private val productDao = db.productDao()
     private val orderDao = db.orderDao()
     private val categoryDao = db.categoryDao()
@@ -63,28 +96,41 @@ class Repository(context: Context) {
     suspend fun allOrders() = orderDao.all()
 
     suspend fun savePayment(orderId: String, amountCents: Int, method: String, status: String, receivedCents: Int? = null, changeCents: Int? = null, installments: Int = 1, transactionRef: String? = null): String {
+        require(status != "PAGO") { "Confirme recebimentos pelo fluxo transacional de Caixa/conciliação" }
         val pid = UUID.randomUUID().toString()
         paymentDao.insert(PaymentEntity(paymentId = pid, orderId = orderId, amountCents = amountCents, method = method, status = status, receivedCents = receivedCents, changeCents = changeCents, installments = installments, transactionRef = transactionRef))
         return pid
     }
 
     suspend fun getPayments(orderId: String) = paymentDao.getByOrder(orderId)
+    suspend fun getAllPayments() = paymentDao.getAll()
 
-    suspend fun closeComandaIfPaid(comandaId: String, totalCents: Int): Boolean {
-        val items = tableOrderItemDao.getItems(comandaId)
-        val total = if (items.isEmpty()) totalCents else items.sumOf { it.unitCents * it.qty }
-        // For now, mark as closed only if we have a confirmed payment flow - caller decides
-        return false
+    suspend fun getOpenCashSession() = db.cashSessionDao().getOpen()
+    suspend fun openCashSession(operator: String, openingBalanceCents: Int): String = db.withTransaction {
+        require(operator.isNotBlank() && openingBalanceCents >= 0)
+        check(db.cashSessionDao().getOpen() == null) { "Caixa já aberto" }
+        val id = UUID.randomUUID().toString()
+        db.cashSessionDao().insert(br.com.ruy.pos.data.local.CashSessionEntity(sessionId = id, operator = operator, openedAt = System.currentTimeMillis(), closedAt = null, openingBalanceCents = openingBalanceCents, status = "ABERTO"))
+        id
+    }
+    suspend fun addCashMovement(sessionId: String, type: String, amountCents: Int, reason: String?, orderId: String? = null) {
+        val mid = UUID.randomUUID().toString()
+        db.cashMovementDao().insert(br.com.ruy.pos.data.local.CashMovementEntity(movementId = mid, sessionId = sessionId, type = type, amountCents = amountCents, reason = reason, orderId = orderId, createdAt = System.currentTimeMillis()))
+    }
+    suspend fun getCashMovements(sessionId: String) = db.cashMovementDao().getBySession(sessionId)
+    suspend fun getCashClosings() = db.cashClosingDao().getAll()
+
+    suspend fun closeComandaIfPaid(comandaId: String): Boolean {
+        return tableOrderDao.byId(comandaId)?.status == "FECHADA" && orderDao.byComanda(comandaId)?.paymentStatus == "PAGO"
     }
 
     suspend fun markTableFree(tableId: String) {
+        check(tableOrderDao.getOpenByTable(tableId) == null) { "Mesa tem comanda aberta; conclua a quitação" }
         tableDao.updateStatus(tableId, "LIVRE", null)
     }
 
     suspend fun closeComanda(comandaId: String) {
-        val items = tableOrderItemDao.getItems(comandaId)
-        val total = items.sumOf { it.unitCents * it.qty }
-        tableOrderDao.updateTotal(comandaId, total)
+        check(closeComandaIfPaid(comandaId)) { "Conclua a quitação pelo checkout" }
     }
 
     suspend fun ensureTables(count: Int) {
@@ -96,23 +142,38 @@ class Repository(context: Context) {
 
     suspend fun getTables() = tableDao.getAll()
 
-    suspend fun openTable(tableId: String): String {
+    suspend fun openTable(tableId: String): String = db.withTransaction {
         val existing = tableOrderDao.getOpenByTable(tableId)
-        if (existing != null) return existing.comandaId
+        if (existing != null) return@withTransaction existing.comandaId
         val comandaId = UUID.randomUUID().toString()
         tableDao.updateStatus(tableId, "OCUPADA", System.currentTimeMillis())
         tableOrderDao.insert(TableOrderEntity(comandaId = comandaId, tableId = tableId, status = "ABERTA"))
-        return comandaId
+        comandaId
     }
 
     suspend fun getOpenComanda(tableId: String) = tableOrderDao.getOpenByTable(tableId)
 
-    suspend fun addItemToComanda(comandaId: String, productName: String, unitCents: Int, qty: Int, productId: String? = null) {
+    suspend fun addItemToComanda(comandaId: String, productName: String, unitCents: Int, qty: Int, productId: String? = null) = db.withTransaction {
+        require(unitCents > 0 && qty > 0)
+        check(tableOrderDao.byId(comandaId)?.status == "ABERTA") { "Comanda encerrada" }
+        val linkedOrder = orderDao.byComanda(comandaId)
+        check(linkedOrder == null || (linkedOrder.paymentStatus != "PAGO" && db.stoneDao().active()?.orderId != linkedOrder.id &&
+            paymentDao.getByOrder(linkedOrder.id).none { it.status in setOf("CRIADA", "AGUARDANDO", "INDETERMINADO", "EM_CONCILIACAO") })) {
+            "Comanda com pagamento pendente; concilie antes de alterar itens"
+        }
         val itemId = UUID.randomUUID().toString()
         tableOrderItemDao.insert(TableOrderItemEntity(itemId = itemId, comandaId = comandaId, productId = productId, productName = productName, unitCents = unitCents, qty = qty))
         val items = tableOrderItemDao.getItems(comandaId)
-        val total = items.sumOf { it.unitCents * it.qty }
+        val totalLong = items.sumOf { it.unitCents.toLong() * it.qty }
+        require(totalLong in 1..Int.MAX_VALUE.toLong()) { "Total da comanda excede limite" }
+        val total = totalLong.toInt()
         tableOrderDao.updateTotal(comandaId, total)
+        linkedOrder?.let { order ->
+            val arr = JSONArray()
+            items.forEach { arr.put(JSONObject().put("name", it.productName).put("qty", it.qty).put("unitCents", it.unitCents)) }
+            val paid = paymentDao.getByOrder(order.id).any { it.status == "PAGO" }
+            orderDao.update(order.copy(totalCents = total, itemsJson = arr.toString(), paymentStatus = if (paid) "PARCIAL" else "NAO_PAGO", syncStatus = "PENDING"))
+        }
     }
 
     suspend fun getComandaItems(comandaId: String) = tableOrderItemDao.getItems(comandaId)

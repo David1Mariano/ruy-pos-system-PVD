@@ -19,6 +19,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.TextButton
+import kotlinx.coroutines.launch
+import org.json.JSONArray
+import br.com.ruy.pos.data.local.OrderEntity
 import androidx.compose.ui.Modifier
 import br.com.ruy.pos.data.Repository
 import br.com.ruy.pos.ui.screens.cash.CashRegisterScreen
@@ -35,6 +45,21 @@ import br.com.ruy.pos.ui.theme.RuyTextSecondary
 fun RuyNavHost(repo: Repository, start: String = "sales", onExit: () -> Unit) {
     var route by remember { mutableStateOf(start) }
     var checkoutData by remember { mutableStateOf<CheckoutData?>(null) }
+    val scope = rememberCoroutineScope()
+    val active by remember { repo.payments.observeActive() }.collectAsState(initial = null)
+    fun resumeOrder(order: OrderEntity) {
+        scope.launch {
+            val arr = JSONArray(order.itemsJson)
+            val lines = (0 until arr.length()).map { arr.getJSONObject(it) }
+            val table = order.comandaId?.let { repo.getComanda(it)?.tableId }
+            checkoutData = CheckoutData(order.totalCents, lines.map { it.getString("name") to it.getInt("qty") },
+                lines.associate { it.getString("name") to it.getInt("unitCents") }, order.comandaId, table, order.id)
+            route = "checkout"
+        }
+    }
+    LaunchedEffect(active?.orderId) {
+        if (checkoutData == null) active?.let { attempt -> repo.getOrder(attempt.orderId)?.let { resumeOrder(it) } }
+    }
     val showNav = route == "sales" || route == "tables" || route == "orders" || route == "products" || route == "categories" || route == "cash"
     Scaffold(
         bottomBar = {
@@ -49,7 +74,11 @@ fun RuyNavHost(repo: Repository, start: String = "sales", onExit: () -> Unit) {
             }
         }
     ) { padding ->
-        androidx.compose.foundation.layout.Box(modifier = Modifier.padding(padding)) {
+        Column(modifier = Modifier.padding(padding).fillMaxSize()) {
+            if (active != null && route != "checkout") TextButton(onClick = {
+                scope.launch { active?.let { repo.getOrder(it.orderId)?.let { order -> resumeOrder(order) } } }
+            }) { Text("Pagamento pendente • retomar conciliação Stone") }
+            Box(Modifier.weight(1f)) {
             when (route) {
                 "sales" -> SalesScreen(repo = repo, onBack = onExit, onOrderRegistered = { route = "orders" }, onCheckout = { total, items, up ->
                     checkoutData = CheckoutData(total, items, up, null, null)
@@ -62,19 +91,22 @@ fun RuyNavHost(repo: Repository, start: String = "sales", onExit: () -> Unit) {
                 "checkout" -> {
                     val data = checkoutData
                     if (data != null) {
-                        CheckoutScreen(repo = repo, totalCents = data.totalCents, items = data.items, unitPrice = data.unitPrice, comandaId = data.comandaId, tableId = data.tableId, onBack = { route = if (data.comandaId != null) "tables" else "sales" }, onPaidAndClosed = { route = "tables" })
+                        androidx.compose.runtime.key(data.orderId, data.comandaId, data.items) {
+                            CheckoutScreen(repo = repo, totalCents = data.totalCents, items = data.items, unitPrice = data.unitPrice, comandaId = data.comandaId, tableId = data.tableId, existingOrderId = data.orderId, onBack = { route = if (data.comandaId != null) "tables" else "sales" }, onPaidAndClosed = { checkoutData = null; route = if (data.comandaId != null) "tables" else "orders" })
+                        }
                     } else {
                         route = "sales"
                     }
                 }
                 "products" -> ProductsScreen(repo = repo, onBack = { route = "sales" })
                 "categories" -> CategoriesScreen(repo = repo, onBack = { route = "sales" })
-                "orders" -> OrdersScreen(repo = repo, onBack = { route = "sales" })
+                "orders" -> OrdersScreen(repo = repo, onBack = { route = "sales" }, onResumeOrder = { resumeOrder(it) })
                 "cash" -> CashRegisterScreen(repo = repo, onBack = { route = "sales" })
                 else -> SalesScreen(repo = repo, onBack = onExit, onOrderRegistered = { route = "orders" }, onCheckout = { total, items, up ->
                     checkoutData = CheckoutData(total, items, up, null, null)
                     route = "checkout"
                 })
+            }
             }
         }
     }
@@ -85,6 +117,7 @@ data class CheckoutData(
     val items: List<Pair<String, Int>>,
     val unitPrice: Map<String, Int>,
     val comandaId: String?,
-    val tableId: String?
+    val tableId: String?,
+    val orderId: String? = null
 )
 

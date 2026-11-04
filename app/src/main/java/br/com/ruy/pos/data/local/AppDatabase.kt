@@ -10,7 +10,7 @@ import br.com.ruy.pos.data.local.Migrations.MIGRATION_3_4
 import br.com.ruy.pos.data.local.Migrations.MIGRATION_4_5
 import br.com.ruy.pos.data.local.Migrations.MIGRATION_5_6
 
-@Database(entities = [ProductEntity::class, OrderEntity::class, CategoryEntity::class, ProductLocalEntity::class, TableEntity::class, TableOrderEntity::class, TableOrderItemEntity::class, PaymentEntity::class, CashSessionEntity::class, CashMovementEntity::class, CashClosingEntity::class], version = 7, exportSchema = false)
+@Database(entities = [ProductEntity::class, OrderEntity::class, CategoryEntity::class, ProductLocalEntity::class, TableEntity::class, TableOrderEntity::class, TableOrderItemEntity::class, PaymentEntity::class, CashSessionEntity::class, CashMovementEntity::class, CashClosingEntity::class, StoneAttemptEntity::class, StoneCallbackEventEntity::class], version = 8, exportSchema = true)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun productDao(): ProductDao
     abstract fun orderDao(): OrderDao
@@ -23,13 +23,14 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun cashSessionDao(): CashSessionDao
     abstract fun cashMovementDao(): CashMovementDao
     abstract fun cashClosingDao(): CashClosingDao
+    abstract fun stoneDao(): StoneDao
 
     companion object {
         @Volatile private var INSTANCE: AppDatabase? = null
         fun get(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val inst = Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, "ruy_pos_db")
-                    .addMigrations(Migrations.MIGRATION_1_2, Migrations.MIGRATION_2_3, Migrations.MIGRATION_3_4, Migrations.MIGRATION_4_5, Migrations.MIGRATION_5_6, Migrations.MIGRATION_6_7)
+                    .addMigrations(Migrations.MIGRATION_1_2, Migrations.MIGRATION_2_3, Migrations.MIGRATION_3_4, Migrations.MIGRATION_4_5, Migrations.MIGRATION_5_6, Migrations.MIGRATION_6_7, Migrations.MIGRATION_7_8)
                     .build()
                 INSTANCE = inst
                 inst

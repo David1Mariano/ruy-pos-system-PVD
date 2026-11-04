@@ -28,15 +28,12 @@ import java.util.Date
 import java.util.Locale
 
 @Composable
-fun OrdersScreen(repo: Repository, onBack: () -> Unit) {
-    var orders by remember { mutableStateOf<List<OrderEntity>>(emptyList()) }
+fun OrdersScreen(repo: Repository, onBack: () -> Unit, onResumeOrder: (OrderEntity) -> Unit = {}) {
+    val orders by remember { repo.observeOrders() }.collectAsState(initial = emptyList())
     var selected by remember { mutableStateOf<OrderEntity?>(null) }
     val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale("pt", "BR"))
     fun reais(c: Int): String = NumberFormat.getCurrencyInstance(Locale("pt", "BR")).format(c / 100.0)
 
-    LaunchedEffect(Unit) {
-        orders = repo.allOrders()
-    }
 
     Column(modifier = Modifier.fillMaxSize().background(RuyBackground)) {
         RuyHeader(title = "Pedidos", subtitle = "Histórico")
@@ -67,7 +64,7 @@ fun OrdersScreen(repo: Repository, onBack: () -> Unit) {
                 RuyPrimaryButton(text = "Voltar", onClick = onBack)
             }
         } else {
-            val o = selected!!
+            val o = orders.firstOrNull { it.id == selected!!.id } ?: selected!!
             Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
                 RuyCard {
                     Text("Pedido ${o.id.take(8).uppercase()}", style = MaterialTheme.typography.titleSmall)
@@ -94,6 +91,10 @@ fun OrdersScreen(repo: Repository, onBack: () -> Unit) {
                     }
                 }
                 Spacer(modifier = Modifier.height(10.dp))
+                if (o.paymentStatus != "PAGO") {
+                    RuyPrimaryButton(text = "Retomar checkout / conciliação", onClick = { onResumeOrder(o) })
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
                 RuyPrimaryButton(text = "Voltar à lista", onClick = { selected = null })
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedButton(onClick = onBack, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(12.dp)) { Text("Voltar ao menu") }
