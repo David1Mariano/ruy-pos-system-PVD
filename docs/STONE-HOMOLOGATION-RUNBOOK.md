@@ -26,12 +26,12 @@ A consulta `git ls-remote origin refs/heads/feature/premium-ui-redesign` confirm
 
 | ID | Situação constatada | Evidência necessária para fechar |
 | --- | --- | --- |
-| B01 | Usuário informou **Tectoy T8, Android 11**, com serial em registro local restrito. ADB continua sem dispositivos; firmware, identidade observada e ambiente de testes não confirmados. | Confrontar declaração com inventário do terminal autorizado e comprovar vínculo ao ambiente de testes. A informação do modelo resolve parte do cadastro, sem fechar o bloqueio. |
+| B01 | Usuário informou **Tectoy T8, Android 11**, e confirmou que a unidade **é usada em vendas normais**. Serial em registro local restrito; último preflight ADB sem dispositivos. Não é uma unidade de homologação demonstrada. | Planejar preservando a operação comercial e solicitar à Stone unidade/ambiente de homologação apropriados. Confrontar o inventário e comprovar o vínculo de testes no equipamento destinado aos ensaios; não converter esta unidade por alteração de APN/StoneCode. |
 | B02 | APK assinado com Android Debug; aceitação no equipamento não demonstrada. | Equipe Stone confirma fluxo de assinatura/instalação para esse modelo e fornece/aceita o artefato correspondente. Manter identidade de assinatura em atualizações. |
 | B03 | **Manifest final contém `android.permission.WAKE_LOCK` e `android.permission.RECEIVE_BOOT_COMPLETED`.** A lista oficial Stone as proíbe. | Tratar compatibilidade do WorkManager/sincronização e entregar posteriormente artefato adequado, com nova inspeção do Manifest final e validação Stone. Não basta conferir o Manifest fonte. |
 | B04 | APK permite HTTP em `127.0.0.1`, `localhost`, `192.168.1.5`, `10.0.2.2` e `pos-hml.ruycaldodecana.com.br`. | Definir/remover exceções no artefato de homologação conforme exigência Stone; evidenciar HTTPS/TLS e whitelist das URLs realmente utilizadas. `SyncClient` exigir HTTPS não elimina essas permissões de rede do APK. |
 | B05 | Ajustes Stone, ID do pedido e app Pagamento não foram observados. | Captura da opção habilitada, versão/origem do app oficial, resolução da Intent e retorno/comprovante com referência compatível. |
-| B06 | Não há autorização específica de ensaios financeiros nem valor/limite/plano aprovado. | Responsável registra ambiente, casos autorizados, valores em centavos, cartões/simuladores de teste aprovados, responsável e janela de execução. Teste que liquide dinheiro real exige autorização explícita própria. |
+| B06 | Não há autorização específica de ensaios financeiros nem valor/limite/plano aprovado. A informação de uso em vendas normais não autoriza testes, instalação do APK ou interrupção da unidade. | Responsável registra ambiente, casos autorizados, valores em centavos, cartões/simuladores de teste aprovados, responsável e janela de execução. Teste que liquide dinheiro real exige autorização explícita própria; a operação comercial atual permanece preservada. |
 | B07 | Conciliação é manual; não há consulta autenticada online à Stone nem controle de perfil/PIN para atestar essa conferência. | Responsável operacional e Stone aceitam o procedimento e definem quem pode executá-lo, evidência independente e controle de acesso ao terminal; se exigirem verificação online/perfis no software, abrir alteração separada antes de liberar. |
 | B08 | Encerrar o fluxo de pagamento não equivale a estornar uma venda paga. Não há deeplink de estorno nem compensação no Caixa nesta versão. | Escopo assinado distingue abandono antes da confirmação de estorno financeiro. Se estorno integrado for requisito de liberação, permanece bloqueado até implementação e teste próprios. |
 | B09 | Pré-requisitos gerais citam seção de contato/suporte. Não foi localizada seção explícita de “Fale Conosco” nos fontes ativos. | Conferir exigência no processo aplicável com a Stone e demonstrar atendimento. Qualquer alteração de interface fica para trabalho separado, preservando esta entrega. |
@@ -46,8 +46,9 @@ Preencher no registro de execução antes de tocar no fluxo de pagamento:
 | --- | --- |
 | Fabricante/modelo, Android/API e firmware | Tectoy T8 / Android 11 declarados pelo usuário; API esperada 30, não medida; firmware pendente |
 | Serial e responsável pelo terminal | Serial informado e registrado somente em evidência local ignorada pelo Git; responsável operacional pendente |
-| Terminal de homologação fornecido/autorizado pela Stone | Não comprovado |
-| Vínculo serial ↔ StoneCode de testes e ativação | Não comprovado |
+| Uso da unidade informado pelo usuário | **Vendas normais / operação comercial**; tratar como produção para o planejamento, sem alegar medição do ambiente financeiro |
+| Terminal de homologação fornecido/autorizado pela Stone | Não apresentado; solicitar equipamento/ambiente apropriados para os ensaios |
+| Vínculo serial ↔ StoneCode de testes e ativação | Não comprovado e não presumido; não alterar o vínculo da unidade em operação |
 | Versões dos aplicativos Stone e canal de origem | Não coletadas |
 | Protocolo Stone / responsável técnico / instalador autorizado | Pendente |
 | Autorização de instalar neste equipamento | Pendente de evidência específica do terminal |
@@ -60,11 +61,13 @@ Instalar o app não autoriza uma cobrança. Terminal de testes também não é p
 
 O modelo **Tectoy T8** consta na [lista oficial de dispositivos suportados pela Stone](https://sdkandroid.stone.com.br/reference/dispositivos-suportados). Isso confirma a presença do modelo na plataforma, sem homologar o Ruy POS, a unidade física ou o certificado do APK. Android 11 é informação do usuário; confirmar API, firmware e versão do app Pagamento na unidade real.
 
+**Uso comercial confirmado pelo usuário:** esta T8 é utilizada em vendas normais. Para o planejamento, tratá-la como unidade em produção, e não como sandbox. Essa informação atualiza o cadastro, sem comprovar tecnicamente o StoneCode/ambiente ou conceder autorização de instalação, transação, cancelamento, interrupção ou mudança de configuração. Preservar pedidos, pagamentos, aplicativos Stone, APN e vínculo de estabelecimento da operação atual.
+
 O usuário também informou operadora/APN e serial. Os valores completos ficam em `artifacts/stone-homologacao/terminal-tectoy-t8-declared.json`, fora do Git; são declarações, não medições do equipamento. A APN identifica configuração de conectividade móvel, **não** StoneCode, credencial, endpoint do backend Ruy ou seleção de sandbox. Não inseri-la como URL de sincronização no aplicativo, não consultá-la como site e não alterá-la para tentar mudar o ambiente financeiro. Preservar a configuração de rede gerenciada pela Stone.
 
 Próximas conferências específicas desta unidade:
 
-1. Confirmar com a Stone se é terminal de homologação e se o serial está vinculado a StoneCode de testes; APN ou Android 11 não comprovam isso.
+1. Solicitar à Stone um terminal/ambiente de homologação adequado e o vínculo a StoneCode de testes para os ensaios. Não reativar ou reconfigurar a T8 comercial para transformá-la em unidade de testes. Eventual procedimento excepcional na unidade comercial precisa de orientação formal Stone e autorização específica do responsável; qualquer operação com liquidação real continua sendo operação financeira real.
 2. Obter versão/build do app Pagamento, firmware e estado de ID do pedido em Ajustes Stone; nada disso foi inferido do modelo.
 3. Confirmar o canal de instalação e a assinatura aceitos para a T8. O processo oficial cita a família `tectoySeriesT`, mas seu exemplo de `signingConfigs.debug` não demonstra que o certificado local seja aceito nesta unidade. Não adicionar SDK/flavors nem re-assinar o APK nesta etapa.
 4. Se ADB estiver liberado pela política do terminal, conectá-lo por cabo de dados e executar o preflight. O serial comercial informado pode diferir do identificador mostrado por `adb devices -l`: usar o identificador ADB efetivamente listado, após conferir a unidade física. Se ADB não for permitido, seguir somente o instalador/canal da Stone.
@@ -162,7 +165,7 @@ Para Pix, usar o fluxo `PIX` implementado no checkout e confirmar o comportament
 
 ## 8. Matriz de ensaios preparados — nenhum executado no hardware
 
-Todos os casos abaixo começam como **NÃO EXECUTADO**. Usar uma ficha por combinação de modelo, firmware, app Stone, certificado e ambiente. Casos com transação exigem B06 fechado; os valores são definidos no plano autorizado, sem adotar automaticamente valores mínimos ou cartões reais.
+Todos os casos abaixo começam como **NÃO EXECUTADO**. Usar uma ficha por combinação de modelo, firmware, app Stone, certificado e ambiente. Casos com transação exigem B06 fechado; os valores são definidos no plano autorizado, sem adotar automaticamente valores mínimos ou cartões reais. A T8 informada está em uso comercial: nenhum desses casos foi autorizado para execução nela. Preparar os ensaios no ambiente de homologação definido pela Stone; nem a instalação de H01 deve ser feita nessa unidade apenas com base na identificação do modelo.
 
 | Caso | Natureza e execução planejada | Resultado esperado e evidência |
 | --- | --- | --- |
