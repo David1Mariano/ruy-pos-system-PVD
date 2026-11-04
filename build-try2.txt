@@ -1,8 +1,0 @@
-﻿cmd : 'gradlew.bat' não é reconhecido como um comando interno
-No linha:4 caractere:190
-+ ... \ruy-pos-system"; cmd /c "gradlew.bat app:assembleDebug" 2>&1 | Out-F ...
-+                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : NotSpecified: ('gradlew.bat' n...comando interno:String) [], RemoteException
-    + FullyQualifiedErrorId : NativeCommandError
- 
-ou externo, um programa operável ou um arquivo em lotes.
