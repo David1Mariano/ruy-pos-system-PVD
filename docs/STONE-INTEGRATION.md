@@ -6,6 +6,8 @@ Data da entrega: 04/11/2026. Versão Android: **0.9.2 (20)**. Banco Room: **8**.
 
 **Auditoria de preparação em 04/11/2026:** package, versão, SHA-256 e assinaturas foram reconferidos sem reconstruir o APK. O remoto `origin/feature/premium-ui-redesign` foi consultado diretamente e confirmou `e0b08df8df54fa23f44ef394d4f39c84d6c27ae1`, contendo também `8d70535`.
 
+**Atualização de identificação:** usuário informou Tectoy T8 com Android 11. O modelo consta na lista oficial Stone; serial e dados de rede foram registrados apenas localmente, fora do Git. ADB continuou sem dispositivos. Ambiente de homologação/StoneCode de testes, firmware, versão do Pagamento e Ajustes ainda não foram confirmados. A APN informada não foi tratada como prova do ambiente financeiro nem como endpoint da aplicação. A seção 3.1 do roteiro detalha a preparação para essa T8.
+
 **Bloqueio para liberação:** o APK tem certificado Android Debug; o Manifest empacotado inclui `WAKE_LOCK` e `RECEIVE_BOOT_COMPLETED`, adicionadas por WorkManager 2.9.0 e listadas como proibidas pela Stone; a configuração de rede contém exceções de HTTP. Não foi localizado terminal por ADB. Ajustes, ID do pedido e disponibilidade do app Pagamento continuam **não verificados no equipamento**. O código de encerramento `2` não comprova estorno: não existe integração `cancel-app://cancel` nem baixa compensatória de estorno nesta versão. Consulte o [roteiro operacional, bloqueios e evidências de liberação](STONE-HOMOLOGATION-RUNBOOK.md).
 
 ## Estado encontrado

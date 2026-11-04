@@ -26,7 +26,7 @@ A consulta `git ls-remote origin refs/heads/feature/premium-ui-redesign` confirm
 
 | ID | Situação constatada | Evidência necessária para fechar |
 | --- | --- | --- |
-| B01 | ADB não listou dispositivos. Modelo, Android, firmware e identificação do terminal não informados. | Operador identifica terminal Stone autorizado; inventário com fabricante/modelo, Android/API, firmware, serial em registro restrito e comprovante de vínculo ao ambiente de testes. |
+| B01 | Usuário informou **Tectoy T8, Android 11**, com serial em registro local restrito. ADB continua sem dispositivos; firmware, identidade observada e ambiente de testes não confirmados. | Confrontar declaração com inventário do terminal autorizado e comprovar vínculo ao ambiente de testes. A informação do modelo resolve parte do cadastro, sem fechar o bloqueio. |
 | B02 | APK assinado com Android Debug; aceitação no equipamento não demonstrada. | Equipe Stone confirma fluxo de assinatura/instalação para esse modelo e fornece/aceita o artefato correspondente. Manter identidade de assinatura em atualizações. |
 | B03 | **Manifest final contém `android.permission.WAKE_LOCK` e `android.permission.RECEIVE_BOOT_COMPLETED`.** A lista oficial Stone as proíbe. | Tratar compatibilidade do WorkManager/sincronização e entregar posteriormente artefato adequado, com nova inspeção do Manifest final e validação Stone. Não basta conferir o Manifest fonte. |
 | B04 | APK permite HTTP em `127.0.0.1`, `localhost`, `192.168.1.5`, `10.0.2.2` e `pos-hml.ruycaldodecana.com.br`. | Definir/remover exceções no artefato de homologação conforme exigência Stone; evidenciar HTTPS/TLS e whitelist das URLs realmente utilizadas. `SyncClient` exigir HTTPS não elimina essas permissões de rede do APK. |
@@ -44,8 +44,8 @@ Preencher no registro de execução antes de tocar no fluxo de pagamento:
 
 | Campo obrigatório | Situação desta auditoria |
 | --- | --- |
-| Fabricante/modelo, Android/API e firmware | Não informado/não coletado |
-| Serial e responsável pelo terminal | Não informado; guardar em evidência restrita |
+| Fabricante/modelo, Android/API e firmware | Tectoy T8 / Android 11 declarados pelo usuário; API esperada 30, não medida; firmware pendente |
+| Serial e responsável pelo terminal | Serial informado e registrado somente em evidência local ignorada pelo Git; responsável operacional pendente |
 | Terminal de homologação fornecido/autorizado pela Stone | Não comprovado |
 | Vínculo serial ↔ StoneCode de testes e ativação | Não comprovado |
 | Versões dos aplicativos Stone e canal de origem | Não coletadas |
@@ -55,6 +55,22 @@ Preencher no registro de execução antes de tocar no fluxo de pagamento:
 | APK/certificado aceitos para o modelo | Pendente |
 
 Instalar o app não autoriza uma cobrança. Terminal de testes também não é prova automática de que uma operação não liquida valores. Confirmar isso com o responsável Stone e usar apenas instrumentos/cenários fornecidos para o ambiente. Não usar um StoneCode encontrado em exemplos da internet sem vínculo validado pela equipe de integrações. A [FAQ de POS Stone](https://sdkandroid.stone.com.br/page/pos-android) trata associação e assinaturas; a confirmação do fornecedor deve ficar anexada ao processo.
+
+### 3.1 Preparação específica da Tectoy T8 informada
+
+O modelo **Tectoy T8** consta na [lista oficial de dispositivos suportados pela Stone](https://sdkandroid.stone.com.br/reference/dispositivos-suportados). Isso confirma a presença do modelo na plataforma, sem homologar o Ruy POS, a unidade física ou o certificado do APK. Android 11 é informação do usuário; confirmar API, firmware e versão do app Pagamento na unidade real.
+
+O usuário também informou operadora/APN e serial. Os valores completos ficam em `artifacts/stone-homologacao/terminal-tectoy-t8-declared.json`, fora do Git; são declarações, não medições do equipamento. A APN identifica configuração de conectividade móvel, **não** StoneCode, credencial, endpoint do backend Ruy ou seleção de sandbox. Não inseri-la como URL de sincronização no aplicativo, não consultá-la como site e não alterá-la para tentar mudar o ambiente financeiro. Preservar a configuração de rede gerenciada pela Stone.
+
+Próximas conferências específicas desta unidade:
+
+1. Confirmar com a Stone se é terminal de homologação e se o serial está vinculado a StoneCode de testes; APN ou Android 11 não comprovam isso.
+2. Obter versão/build do app Pagamento, firmware e estado de ID do pedido em Ajustes Stone; nada disso foi inferido do modelo.
+3. Confirmar o canal de instalação e a assinatura aceitos para a T8. O processo oficial cita a família `tectoySeriesT`, mas seu exemplo de `signingConfigs.debug` não demonstra que o certificado local seja aceito nesta unidade. Não adicionar SDK/flavors nem re-assinar o APK nesta etapa.
+4. Se ADB estiver liberado pela política do terminal, conectá-lo por cabo de dados e executar o preflight. O serial comercial informado pode diferir do identificador mostrado por `adb devices -l`: usar o identificador ADB efetivamente listado, após conferir a unidade física. Se ADB não for permitido, seguir somente o instalador/canal da Stone.
+5. No Android 11, conferir a resolução de `payment-app://pay` no contexto do Ruy, com o `<queries>` existente e as declarações de Ajustes baseadas em observação real. Não abrir a URI de pagamento como teste de disponibilidade sem plano financeiro autorizado.
+
+O preflight direcionado ao serial informado também retornou **zero dispositivos conectados**, com saída 2. Resultado local: `preflight-tectoy-t8.json`. Não houve leitura de propriedades do terminal, instalação ou teste financeiro. Os bloqueios B02–B09 e a ausência de homologação permanecem.
 
 ## 4. Conferir o que depende do equipamento e do contrato
 
