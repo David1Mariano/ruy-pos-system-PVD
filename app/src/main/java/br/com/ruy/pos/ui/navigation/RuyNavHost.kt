@@ -8,6 +8,8 @@ import androidx.compose.material.icons.filled.Inventory
 import androidx.compose.material.icons.filled.PointOfSale
 import androidx.compose.material.icons.filled.TableRestaurant
 import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -33,6 +35,7 @@ import androidx.compose.ui.Modifier
 import br.com.ruy.pos.data.Repository
 import br.com.ruy.pos.ui.screens.cash.CashRegisterScreen
 import br.com.ruy.pos.ui.screens.backup.BackupScreen
+import br.com.ruy.pos.ui.screens.reports.ReportsScreen
 import br.com.ruy.pos.ui.screens.categories.CategoriesScreen
 import br.com.ruy.pos.ui.screens.checkout.CheckoutScreen
 import br.com.ruy.pos.ui.screens.orders.OrdersScreen
@@ -61,7 +64,7 @@ fun RuyNavHost(repo: Repository, start: String = "sales", onExit: () -> Unit, on
     LaunchedEffect(active?.orderId) {
         if (checkoutData == null) active?.let { attempt -> repo.getOrder(attempt.orderId)?.let { resumeOrder(it) } }
     }
-    val showNav = route == "sales" || route == "tables" || route == "orders" || route == "products" || route == "categories" || route == "cash" || route == "backup"
+    val showNav = route == "sales" || route == "tables" || route == "orders" || route == "products" || route == "categories" || route == "cash" || route == "backup" || route == "reports"
     Scaffold(
         bottomBar = {
             if (showNav) {
@@ -71,6 +74,8 @@ fun RuyNavHost(repo: Repository, start: String = "sales", onExit: () -> Unit, on
                     NavigationBarItem(selected = route == "orders", onClick = { route = "orders" }, icon = { Icon(Icons.Default.History, contentDescription = null) }, label = { Text("Pedidos") }, colors = NavigationBarItemDefaults.colors(selectedIconColor = RuyRed, selectedTextColor = RuyRed, unselectedIconColor = RuyTextSecondary, unselectedTextColor = RuyTextSecondary))
                     NavigationBarItem(selected = route == "cash", onClick = { route = "cash" }, icon = { Icon(Icons.Default.AccountBalanceWallet, contentDescription = null) }, label = { Text("Caixa") }, colors = NavigationBarItemDefaults.colors(selectedIconColor = RuyRed, selectedTextColor = RuyRed, unselectedIconColor = RuyTextSecondary, unselectedTextColor = RuyTextSecondary))
                     NavigationBarItem(selected = route == "categories", onClick = { route = "categories" }, icon = { Icon(Icons.Default.Home, contentDescription = null) }, label = { Text("Mais") }, colors = NavigationBarItemDefaults.colors(selectedIconColor = RuyRed, selectedTextColor = RuyRed, unselectedIconColor = RuyTextSecondary, unselectedTextColor = RuyTextSecondary))
+                    NavigationBarItem(selected = route == "reports", onClick = { route = "reports" }, icon = { Icon(Icons.Default.Description, contentDescription = null) }, label = { Text("Relatórios") }, colors = NavigationBarItemDefaults.colors(selectedIconColor = RuyRed, selectedTextColor = RuyRed, unselectedIconColor = RuyTextSecondary, unselectedTextColor = RuyTextSecondary))
+                    NavigationBarItem(selected = route == "backup", onClick = { route = "backup" }, icon = { Icon(Icons.Default.Backup, contentDescription = null) }, label = { Text("Backup") }, colors = NavigationBarItemDefaults.colors(selectedIconColor = RuyRed, selectedTextColor = RuyRed, unselectedIconColor = RuyTextSecondary, unselectedTextColor = RuyTextSecondary))
                 }
             }
         }
@@ -100,10 +105,11 @@ fun RuyNavHost(repo: Repository, start: String = "sales", onExit: () -> Unit, on
                     }
                 }
                 "products" -> ProductsScreen(repo = repo, onBack = { route = "sales" })
-                "categories" -> CategoriesScreen(repo = repo, onBack = { route = "sales" }, onBackup = { route = "backup" })
+                "categories" -> CategoriesScreen(repo = repo, onBack = { route = "sales" }, onBackup = { route = "backup" }, onReports = { route = "reports" })
                 "orders" -> OrdersScreen(repo = repo, onBack = { route = "sales" }, onResumeOrder = { resumeOrder(it) })
                 "cash" -> CashRegisterScreen(repo = repo, onBack = { route = "sales" })
                 "backup" -> BackupScreen(repo = repo, onBack = { route = "categories" }, onRestoreClick = onRestoreClick)
+                "reports" -> ReportsScreen(repo = repo, onBack = { route = "sales" })
                 else -> SalesScreen(repo = repo, onBack = onExit, onOrderRegistered = { route = "orders" }, onCheckout = { total, items, up ->
                     checkoutData = CheckoutData(total, items, up, null, null)
                     route = "checkout"
