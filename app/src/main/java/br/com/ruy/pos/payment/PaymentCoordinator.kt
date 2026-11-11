@@ -190,6 +190,22 @@ class PaymentCoordinator(private val db: AppDatabase) {
         p.paymentId
     }
 
+    /** Payment executed on an EXTERNAL provider/machine (other POS, bank app, Pix manual). */
+    suspend fun confirmExternal(orderId: String, amountCents: Int, method: String, operator: String,
+                                evidence: String, installments: Int = 1, transactionRef: String? = null): String = db.withTransaction {
+        require(operator.trim().length >= 3) { "Informe o operador responsável (3 ou mais caracteres)" }
+        require(evidence.trim().length >= 8) { "Informe comprovante/extrato consultado (8 ou mais caracteres)" }
+        requireNoFlight()
+        val order = requireNotNull(db.orderDao().byId(orderId)) { "Pedido não encontrado" }
+        require(amountCents in 1..remaining(order)) { "Valor excede o saldo do pedido" }
+        val session = requireNotNull(db.cashSessionDao().getOpen()) { "Abra o Caixa antes de registrar recebimento" }
+        val p = PaymentEntity(UUID.randomUUID().toString(), orderId, amountCents, method, "PAGO_MANUALMENTE",
+            null, null, installments, transactionRef, cashSessionId = session.sessionId)
+        db.paymentDao().insert(p)
+        settle(p)
+        p.paymentId
+    }
+
     private suspend fun verifyComanda(order: OrderEntity) {
         order.comandaId?.let { id ->
             val comanda = requireNotNull(db.tableOrderDao().byId(id))

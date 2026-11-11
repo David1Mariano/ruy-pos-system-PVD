@@ -23,6 +23,38 @@ import java.util.Locale
 import org.json.JSONArray
 
 @Composable
+private fun CheckLine(text: String, checked: Boolean, onCheck: (Boolean) -> Unit) {
+    Row { Checkbox(checked = checked, onCheckedChange = onCheck); Text(text, modifier = Modifier.padding(top = 12.dp)) }
+}
+
+@Composable
+fun ExternalPaymentDialog(orderId: String, method: String, amountCents: Int, busy: Boolean,
+                           error: String?, onDismiss: () -> Unit, onConfirm: (ExternalPaymentInput) -> Unit) {
+    var operator by remember { mutableStateOf("") }
+    var evidence by remember { mutableStateOf("") }
+    var reference by remember { mutableStateOf("") }
+    var installments by remember { mutableStateOf("1") }
+    var checked by remember { mutableStateOf(false) }
+    AlertDialog(onDismissRequest = { if (!busy) onDismiss() }, title = { Text("Pagamento externo confirmado") }, text = {
+        Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text("Valor: ${amountCents} centavos • Modalidade: $method")
+            Text("O pagamento foi efetuado em outro provedor/maquininha. Nenhum dado do cartão é coletado pelo Ruy POS.")
+            OutlinedTextField(reference, { reference = it }, label = { Text("Identificador do comprovante (opcional)") })
+            if (method == "CREDITO") OutlinedTextField(installments, { installments = it }, label = { Text("Parcelas (1 a 99)") })
+            OutlinedTextField(operator, { operator = it }, label = { Text("Operador responsável") })
+            OutlinedTextField(evidence, { evidence = it }, label = { Text("Comprovante/extrato consultado (data/hora e identificador)") })
+            CheckLine("Conferi no comprovante/extrato do provedor que este valor foi recebido para este pedido", checked) { checked = it }
+            error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        }
+    }, confirmButton = { TextButton(enabled = !busy && checked && operator.trim().length >= 3 && evidence.trim().length >= 8,
+        onClick = { onConfirm(ExternalPaymentInput(operator.trim(), evidence.trim(), reference.ifBlank { null }, installments.toIntOrNull() ?: 1)) }) {
+        Text(if (busy) "Salvando…" else "Registrar recebimento") } },
+        dismissButton = { TextButton(enabled = !busy, onClick = onDismiss) { Text("Voltar") } })
+}
+
+data class ExternalPaymentInput(val operator: String, val evidence: String, val reference: String?, val installments: Int)
+
+@Composable
 fun CheckoutScreen(
     repo: Repository,
     totalCents: Int,
@@ -48,6 +80,7 @@ fun CheckoutScreen(
     var error by remember { mutableStateOf<String?>(null) }
     var setup by remember { mutableStateOf(false) }
     var reconciliation by remember { mutableStateOf(false) }
+    var external by remember { mutableStateOf(false) }
     var configuration by remember { mutableStateOf(StoneConfiguration.read(context)) }
     val stone = remember(configuration) { StonePaymentGateway(context, configuration) }
     val active by remember { repo.payments.observeActive() }.collectAsState(initial = null)
@@ -78,6 +111,21 @@ fun CheckoutScreen(
         if (order?.paymentStatus == "PAGO" && active == null) onPaidAndClosed()
     }
 
+    if (external) ExternalPaymentDialog(orderId ?: "", method, amountCents, processing, error,
+        onDismiss = { external = false; error = null }, onConfirm = { input ->
+            if (!processing) {
+                processing = true
+                scope.launch {
+                    try {
+                        repo.payments.confirmExternal(orderId ?: "", amountCents, method, input.operator, input.evidence, input.installments, input.reference)
+                        external = false
+                        error = null
+                        notify("Pagamento externo registrado como PAGO_MANUALMENTE no Caixa")
+                    } catch (e: Exception) { error = e.message ?: "Falha no registro externo" }
+                    finally { processing = false }
+                }
+            }
+        })
     if (setup) StoneSetupDialog(configuration, onDismiss = { setup = false }, onSaved = { configuration = it; setup = false })
     if (reconciliation && attempt != null && payment != null) StoneReconciliationDialog(attempt, payment, processing,
         error = error, onDismiss = { reconciliation = false; error = null }, onConfirm = { input ->
@@ -143,6 +191,7 @@ fun CheckoutScreen(
                     Text(stone.unavailableReason() ?: "Aplicativo resolvido; pagamento sujeito ao suporte do terminal", style = MaterialTheme.typography.bodySmall)
                     TextButton(enabled = !processing && active == null, onClick = { setup = true }) { Text("Conferir Ajustes Stone") }
                     if (method == "PIX") Text("Pix depende do equipamento. QR exibido não confirma recebimento.", style = MaterialTheme.typography.bodySmall)
+                    TextButton(enabled = !processing && active == null, onClick = { external = true }) { Text("Pagamento externo já ocorreu (maquininha/banco)") }
                 }
             }
             if (attempt != null) RuyCard {

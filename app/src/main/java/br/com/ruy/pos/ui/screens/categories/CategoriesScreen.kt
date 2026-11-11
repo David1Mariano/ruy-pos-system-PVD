@@ -21,7 +21,7 @@ import kotlinx.coroutines.launch
 import java.util.UUID
 
 @Composable
-fun CategoriesScreen(repo: Repository, onBack: () -> Unit) {
+fun CategoriesScreen(repo: Repository, onBack: () -> Unit, onBackup: () -> Unit = {}, onReports: () -> Unit = {}) {
     val scope = rememberCoroutineScope()
     var name by remember { mutableStateOf("") }
     var items by remember { mutableStateOf<List<CategoryEntity>>(emptyList()) }
@@ -67,6 +67,10 @@ fun CategoriesScreen(repo: Repository, onBack: () -> Unit) {
                     }
                 }
             }
+            Spacer(modifier = Modifier.height(8.dp))
+            RuyPrimaryButton(text = "Backup / Restaurar", onClick = onBackup)
+            Spacer(modifier = Modifier.height(8.dp))
+            RuyPrimaryButton(text = "Relatórios", onClick = onReports)
             Spacer(modifier = Modifier.height(8.dp))
             RuyPrimaryButton(text = "Voltar", onClick = onBack)
         }
