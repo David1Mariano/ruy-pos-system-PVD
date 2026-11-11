@@ -1,6 +1,9 @@
 package br.com.ruy.pos.ui.screens.cash
 
+import android.content.Intent
 import android.widget.Toast
+import br.com.ruy.pos.report.PdfReport
+import java.io.File
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -135,11 +138,33 @@ fun CashRegisterScreen(repo: Repository, onBack: () -> Unit) {
                     })
                 }
             }
-            Spacer(modifier = Modifier.height(10.dp))
-            Text("Histórico de fechamentos", style = MaterialTheme.typography.titleSmall)
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                items(closings) { c -> RuyCard { Text("Fechamento ${c.closingId.take(6)} - Diferença: ${reais(c.differenceCents)}", style = MaterialTheme.typography.bodySmall) } }
-            }
+Spacer(modifier = Modifier.height(10.dp))
+                Text("Histórico de fechamentos", style = MaterialTheme.typography.titleSmall)
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    items(closings) { c ->
+                        RuyCard {
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                Text("Fechamento ${c.closingId.take(6)} - Diferença: ${reais(c.differenceCents)}", style = MaterialTheme.typography.bodySmall)
+                                Text("Total vendas: ${reais(c.totalSalesCents)} • Dinheiro: ${reais(c.totalCashCents)}", style = MaterialTheme.typography.bodySmall, color = RuyTextSecondary)
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    FilledTonalButton(onClick = {
+                                        scope.launch {
+                                            try {
+                                                val movements = repo.getCashMovements(c.sessionId)
+                                                val payments = repo.getAllPayments().filter { it.cashSessionId == c.sessionId }
+                                                val f: File = PdfReport.generateCashClosing(context, c, movements, payments, c.operator)
+                                                val share = Intent(Intent.ACTION_SEND).apply { type = "application/pdf"; putExtra(Intent.EXTRA_STREAM, android.net.Uri.fromFile(f)); putExtra(Intent.EXTRA_TEXT, "Relatório de fechamento de caixa Ruy POS") }
+                                                context.startActivity(Intent.createChooser(share, "Compartilhar relatório"))
+                                                Toast.makeText(context, "Relatório gerado", Toast.LENGTH_SHORT).show()
+                                            } catch (e: Exception) { Toast.makeText(context, e.message ?: "Falha no PDF", Toast.LENGTH_LONG).show() }
+                                        }
+                                    }, shape = RoundedCornerShape(10.dp)) { Text("Exportar PDF") }
+                                }
+                            }
+                        }
+                    }
+                }
             Spacer(modifier = Modifier.height(8.dp))
             RuyPrimaryButton(text = "Voltar", onClick = onBack)
         }

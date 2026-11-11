@@ -1,12 +1,14 @@
 ﻿package br.com.ruy.pos.ui.activity
 
-import android.os.Bundle
 import android.content.Intent
+import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import br.com.ruy.pos.data.Repository
 import br.com.ruy.pos.ui.navigation.RuyNavHost
+import br.com.ruy.pos.ui.screens.backup.handleBackupResult
 import br.com.ruy.pos.ui.theme.RuyPosTheme
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -16,6 +18,11 @@ import kotlinx.coroutines.launch
 
 class PosActivity : ComponentActivity() {
     private lateinit var repo: Repository
+
+    private val restoreLauncher = registerForActivityResult(RESULT_CONTRACT) { result ->
+        val ok = handleBackupResult(this, result.resultCode, result.data)
+        Toast.makeText(this, if (ok) "Backup restaurado" else "Falha na restauração", Toast.LENGTH_LONG).show()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,7 +38,7 @@ class PosActivity : ComponentActivity() {
         }
         setContent {
             RuyPosTheme {
-                RuyNavHost(repo = repo, onExit = { finish() })
+                RuyNavHost(repo = repo, onExit = { finish() }, onRestoreClick = { restoreLauncher.launch(Intent(Intent.ACTION_GET_CONTENT).apply { type = "application/zip" }) })
             }
         }
     }
@@ -50,9 +57,12 @@ class PosActivity : ComponentActivity() {
                 val result = repo.payments.receive(raw)
                 Toast.makeText(this@PosActivity, result, Toast.LENGTH_LONG).show()
             } catch (e: Exception) {
-                // Keep the persisted flight locked if storage/processing fails. No URI/card data in logs.
                 Toast.makeText(this@PosActivity, "Retorno não persistido; retome a conciliação em Pedidos", Toast.LENGTH_LONG).show()
             }
         }
+    }
+
+    private companion object {
+        val RESULT_CONTRACT = ActivityResultContracts.StartActivityForResult()
     }
 }

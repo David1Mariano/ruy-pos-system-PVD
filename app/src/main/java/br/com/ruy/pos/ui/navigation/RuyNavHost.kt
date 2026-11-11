@@ -32,6 +32,7 @@ import br.com.ruy.pos.data.local.OrderEntity
 import androidx.compose.ui.Modifier
 import br.com.ruy.pos.data.Repository
 import br.com.ruy.pos.ui.screens.cash.CashRegisterScreen
+import br.com.ruy.pos.ui.screens.backup.BackupScreen
 import br.com.ruy.pos.ui.screens.categories.CategoriesScreen
 import br.com.ruy.pos.ui.screens.checkout.CheckoutScreen
 import br.com.ruy.pos.ui.screens.orders.OrdersScreen
@@ -42,7 +43,7 @@ import br.com.ruy.pos.ui.theme.RuyRed
 import br.com.ruy.pos.ui.theme.RuyTextSecondary
 
 @Composable
-fun RuyNavHost(repo: Repository, start: String = "sales", onExit: () -> Unit) {
+fun RuyNavHost(repo: Repository, start: String = "sales", onExit: () -> Unit, onRestoreClick: () -> Unit = {}) {
     var route by remember { mutableStateOf(start) }
     var checkoutData by remember { mutableStateOf<CheckoutData?>(null) }
     val scope = rememberCoroutineScope()
@@ -60,7 +61,7 @@ fun RuyNavHost(repo: Repository, start: String = "sales", onExit: () -> Unit) {
     LaunchedEffect(active?.orderId) {
         if (checkoutData == null) active?.let { attempt -> repo.getOrder(attempt.orderId)?.let { resumeOrder(it) } }
     }
-    val showNav = route == "sales" || route == "tables" || route == "orders" || route == "products" || route == "categories" || route == "cash"
+    val showNav = route == "sales" || route == "tables" || route == "orders" || route == "products" || route == "categories" || route == "cash" || route == "backup"
     Scaffold(
         bottomBar = {
             if (showNav) {
@@ -99,9 +100,10 @@ fun RuyNavHost(repo: Repository, start: String = "sales", onExit: () -> Unit) {
                     }
                 }
                 "products" -> ProductsScreen(repo = repo, onBack = { route = "sales" })
-                "categories" -> CategoriesScreen(repo = repo, onBack = { route = "sales" })
+                "categories" -> CategoriesScreen(repo = repo, onBack = { route = "sales" }, onBackup = { route = "backup" })
                 "orders" -> OrdersScreen(repo = repo, onBack = { route = "sales" }, onResumeOrder = { resumeOrder(it) })
                 "cash" -> CashRegisterScreen(repo = repo, onBack = { route = "sales" })
+                "backup" -> BackupScreen(repo = repo, onBack = { route = "categories" }, onRestoreClick = onRestoreClick)
                 else -> SalesScreen(repo = repo, onBack = onExit, onOrderRegistered = { route = "orders" }, onCheckout = { total, items, up ->
                     checkoutData = CheckoutData(total, items, up, null, null)
                     route = "checkout"
