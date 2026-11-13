@@ -18,17 +18,42 @@ import kotlinx.coroutines.launch
 
 class PosActivity : ComponentActivity() {
     private lateinit var repo: Repository
+    private val restoring = androidx.compose.runtime.mutableStateOf(false)
+    private val loadedRepo = androidx.compose.runtime.mutableStateOf<Repository?>(null)
+    private val startupMessage = androidx.compose.runtime.mutableStateOf("Preparando dados locais…")
 
     private val restoreLauncher = registerForActivityResult(RESULT_CONTRACT) { result ->
-        val ok = handleBackupResult(this, result.resultCode, result.data)
-        Toast.makeText(this, if (ok) "Backup restaurado" else "Falha na restauração", Toast.LENGTH_LONG).show()
+        restoring.value = true
+        lifecycleScope.launch {
+        val ok = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { handleBackupResult(this@PosActivity, result.resultCode, result.data) }
+        if (ok) android.app.AlertDialog.Builder(this@PosActivity)
+            .setTitle("Backup validado e preparado")
+            .setMessage("A restauração será aplicada ao reabrir o aplicativo. Feche aqui e abra novamente pelo ícone. Não registre novas operações antes disso.")
+            .setCancelable(false)
+            .setPositiveButton("Fechar para aplicar") { _, _ -> finishAffinity(); android.os.Process.killProcess(android.os.Process.myPid()) }
+            .show()
+        else { restoring.value = false; Toast.makeText(this@PosActivity, "Restauração cancelada ou arquivo inválido; dados mantidos", Toast.LENGTH_LONG).show() }
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        repo = Repository(this)
-        handlePaymentReturn(intent)
         lifecycleScope.launch {
+            try {
+                repo = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    Repository(this@PosActivity).also { br.com.ruy.pos.Homologation.seed(this@PosActivity) }
+                }
+                loadedRepo.value = repo
+            } catch (e: Exception) {
+                startupMessage.value = "Não foi possível abrir os dados locais. Preserve os arquivos e procure suporte antes de tentar restaurar novamente."
+                android.util.Log.e("RuyStartup", "Dados locais indisponíveis", e)
+                return@launch
+            }
+            getSharedPreferences("restore_state", MODE_PRIVATE).getString("notice", null)?.let {
+                Toast.makeText(this@PosActivity, it, Toast.LENGTH_LONG).show()
+                getSharedPreferences("restore_state", MODE_PRIVATE).edit().remove("notice").apply()
+            }
+            handlePaymentReturn(intent)
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 while (true) {
                     repo.payments.expireMissingReturn()
@@ -38,7 +63,15 @@ class PosActivity : ComponentActivity() {
         }
         setContent {
             RuyPosTheme {
-                RuyNavHost(repo = repo, onExit = { finish() }, onRestoreClick = { restoreLauncher.launch(Intent(Intent.ACTION_GET_CONTENT).apply { type = "application/zip" }) })
+                if (restoring.value) androidx.compose.ui.window.Dialog(onDismissRequest = {},
+                    properties = androidx.compose.ui.window.DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false)) {
+                    androidx.compose.material3.Surface {
+                        androidx.compose.material3.Text(if (br.com.ruy.pos.BuildConfig.HOMOLOGATION) "RUY POS — HOMOLOGAÇÃO • Validando restauração…" else "Validando restauração…")
+                    }
+                }
+                loadedRepo.value?.let { readyRepo ->
+                    RuyNavHost(repo = readyRepo, onExit = { finish() }, onRestoreClick = { restoreLauncher.launch(Intent(Intent.ACTION_GET_CONTENT).apply { type = "application/zip" }) })
+                } ?: androidx.compose.material3.Text((if (br.com.ruy.pos.BuildConfig.HOMOLOGATION) "RUY POS — HOMOLOGAÇÃO\n" else "") + startupMessage.value)
             }
         }
     }
@@ -50,6 +83,7 @@ class PosActivity : ComponentActivity() {
     }
 
     private fun handlePaymentReturn(incoming: Intent?) {
+        if (!::repo.isInitialized) return // Cold startup consumes the latest intent after opening Room.
         if (incoming?.action != Intent.ACTION_VIEW) return
         val raw = incoming.dataString ?: return
         lifecycleScope.launch {

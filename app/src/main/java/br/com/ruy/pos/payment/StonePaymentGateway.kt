@@ -31,8 +31,10 @@ data class StoneConfiguration(
     }
 }
 
-class StonePaymentGateway(private val context: Context, private val configuration: StoneConfiguration = StoneConfiguration.read(context)) : PaymentGateway {
+class StonePaymentGateway internal constructor(private val context: Context, private val configuration: StoneConfiguration = StoneConfiguration.read(context),
+    private val paymentEnabled: Boolean = br.com.ruy.pos.BuildConfig.SMART_POS_REAL_ENABLED) : PaymentGateway {
     fun unavailableReason(): String? {
+        if (!paymentEnabled) return "Stone Smart POS desabilitado até homologação autorizada; não é TapStone"
         if (!configuration.terminalVerified) return "Confirme um POS Android fornecido pela Stone e o aplicativo Pagamento oficial"
         if (!configuration.orderIdEnabled) return "Habilite ID do pedido no aplicativo Ajustes Stone e confirme a configuração"
         val intent = Intent(Intent.ACTION_VIEW, Uri.parse("payment-app://pay"))
@@ -64,6 +66,7 @@ class StonePaymentGateway(private val context: Context, private val configuratio
 
     /** Caller must persist and atomically claim the attempt BEFORE invoking this method. */
     override fun process(request: PaymentRequest): PaymentResult {
+        unavailableReason()?.let { return PaymentResult(false, "NAO_INICIADO", message = it) }
         val intent = try {
             val prepared = buildIntent(request)
             unavailableReason()?.let { return PaymentResult(false, "NAO_INICIADO", message = it) }

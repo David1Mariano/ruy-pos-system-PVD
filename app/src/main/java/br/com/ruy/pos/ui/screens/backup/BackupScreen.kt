@@ -42,7 +42,7 @@ fun BackupScreen(repo: Repository, onBack: () -> Unit, onRestoreClick: () -> Uni
                 Text("Recomendação: exporte um backup atual antes de restaurar.", style = MaterialTheme.typography.bodySmall, color = RuyTextSecondary)
                 Text("Se o ZIP estiver corrompido, os dados atuais serão mantidos.", style = MaterialTheme.typography.bodySmall, color = RuyTextSecondary)
             }
-        }, confirmButton = { TextButton(enabled = !busy, onClick = { busy = true; onRestoreClick(); showConfirm = false }) { Text("Restaurar") } },
+        }, confirmButton = { TextButton(enabled = !busy, onClick = { onRestoreClick(); showConfirm = false }) { Text("Restaurar") } },
             dismissButton = { TextButton(enabled = !busy, onClick = { showConfirm = false }) { Text("Cancelar") } })
     }
 
@@ -58,8 +58,8 @@ fun BackupScreen(repo: Repository, onBack: () -> Unit, onRestoreClick: () -> Uni
                     busy = true
                     scope.launch {
                         try {
-                            val target = File(context.cacheDir, "ruy_pos_backup.zip")
-                            val ok = BackupManager.export(context, Uri.fromFile(target))
+                            val target = BackupManager.backupFile(context)
+                            val ok = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { BackupManager.export(context, Uri.fromFile(target)) }
                             message = if (ok) "Backup exportado com sucesso" else "Falha na exportação"
                         } catch (e: Exception) { message = "Erro: ${e.message}" }
                         finally { busy = false }
@@ -72,7 +72,10 @@ fun BackupScreen(repo: Repository, onBack: () -> Unit, onRestoreClick: () -> Uni
                 Spacer(modifier = Modifier.height(8.dp))
                 Text("Substitui o banco e as fotos atuais. Esta ação não pode ser desfeita.", style = MaterialTheme.typography.bodySmall, color = RuyTextSecondary)
                 Spacer(modifier = Modifier.height(10.dp))
-                RuyPrimaryButton(text = if (busy) "Restaurando…" else "Restaurar backup", onClick = { busy = true; onRestoreClick() })
+                RuyPrimaryButton(text = "Restaurar backup", enabled = !busy, onClick = { showConfirm = true })
+                if (backupFile.exists()) TextButton(onClick = {
+                    context.startActivity(Intent.createChooser(br.com.ruy.pos.report.ShareFiles.intent(context, backupFile, "application/zip"), "Compartilhar backup"))
+                }) { Text("Compartilhar backup") }
             }
             Spacer(modifier = Modifier.height(12.dp))
             message?.let { Text(it, style = MaterialTheme.typography.bodySmall) }

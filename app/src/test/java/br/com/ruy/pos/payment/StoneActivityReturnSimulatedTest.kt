@@ -41,7 +41,11 @@ class StoneActivityReturnSimulatedTest {
                 assertTrue(db.cashMovementDao().getBySession("SIMULATED-SESSION").isEmpty())
                 assertNotNull(db.stoneDao().active())
             }
-        } finally { controller.destroy() }
+        } finally {
+            controller.destroy()
+            db.close()
+            org.robolectric.util.ReflectionHelpers.setStaticField(AppDatabase::class.java, "INSTANCE", null)
+        }
     }
     private fun await(condition: () -> Boolean) {
         repeat(200) {

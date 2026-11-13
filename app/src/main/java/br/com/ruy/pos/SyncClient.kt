@@ -14,6 +14,7 @@ import java.net.URL
  */
 object SyncClient {
     fun send(endpoint: String, bearer: String, order: JSONObject): Result<String> {
+        if (BuildConfig.HOMOLOGATION) return Result.failure(IllegalStateException("Sincronização bloqueada em homologação"))
         return if (!endpoint.startsWith("https://")) Result.failure(Exception("https_required"))
         else if (bearer.isBlank()) Result.failure(Exception("token_required"))
         else {

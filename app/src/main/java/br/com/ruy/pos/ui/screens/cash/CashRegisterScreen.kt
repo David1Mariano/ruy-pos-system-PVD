@@ -154,7 +154,7 @@ Spacer(modifier = Modifier.height(10.dp))
                                                 val movements = repo.getCashMovements(c.sessionId)
                                                 val payments = repo.getAllPayments().filter { it.cashSessionId == c.sessionId }
                                                 val f: File = PdfReport.generateCashClosing(context, c, movements, payments, c.operator)
-                                                val share = Intent(Intent.ACTION_SEND).apply { type = "application/pdf"; putExtra(Intent.EXTRA_STREAM, android.net.Uri.fromFile(f)); putExtra(Intent.EXTRA_TEXT, "Relatório de fechamento de caixa Ruy POS") }
+                                                val share = br.com.ruy.pos.report.ShareFiles.intent(context, f, "application/pdf")
                                                 context.startActivity(Intent.createChooser(share, "Compartilhar relatório"))
                                                 Toast.makeText(context, "Relatório gerado", Toast.LENGTH_SHORT).show()
                                             } catch (e: Exception) { Toast.makeText(context, e.message ?: "Falha no PDF", Toast.LENGTH_LONG).show() }

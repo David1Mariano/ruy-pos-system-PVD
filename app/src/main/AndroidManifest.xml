@@ -1,17 +1,22 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
  <uses-permission android:name="android.permission.INTERNET"/>
  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+ <uses-permission android:name="android.permission.NFC"/>
+ <uses-feature android:name="android.hardware.nfc" android:required="false"/>
  <queries>
   <intent><action android:name="android.intent.action.VIEW"/><data android:scheme="payment-app" android:host="pay"/></intent>
  </queries>
  <application android:allowBackup="false" android:label="Ruy POS System" android:supportsRtl="true" android:theme="@android:style/Theme.Material.Light.NoActionBar" android:usesCleartextTraffic="false" android:networkSecurityConfig="@xml/network_security_config">
+  <provider android:name="androidx.core.content.FileProvider" android:authorities="${applicationId}.files" android:exported="false" android:grantUriPermissions="true">
+   <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/share_paths"/>
+  </provider>
   <activity android:name=".ui.activity.PosActivity" android:exported="true" android:launchMode="singleTask">
    <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
    <intent-filter>
     <action android:name="android.intent.action.VIEW"/>
     <category android:name="android.intent.category.DEFAULT"/>
     <category android:name="android.intent.category.BROWSABLE"/>
-    <data android:scheme="ruypos-stone" android:host="pay-response"/>
+    <data android:scheme="${stoneReturnScheme}" android:host="pay-response"/>
    </intent-filter>
   </activity>
   <activity android:name=".MainActivity" android:exported="false" />

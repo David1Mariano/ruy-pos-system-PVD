@@ -132,7 +132,8 @@ fun SalesScreen(repo: Repository, onBack: () -> Unit, onOrderRegistered: (String
                             val items = cart.map { it.key to it.value }
                             onCheckout(total, items, unitPrice)
                         }, modifier = Modifier.weight(1f))
-                        FilledTonalButton(onClick = {
+                        FilledTonalButton(enabled = !registering, onClick = {
+                            if (registering) return@FilledTonalButton
                             registering = true
                             scope.launch {
                                 try {

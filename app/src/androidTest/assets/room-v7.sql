@@ -1,0 +1,12 @@
+-- Historical v7 schema from 88dbf77 entities and migration 6->7, not generated from v8.
+CREATE TABLE products (id TEXT PRIMARY KEY NOT NULL, sku TEXT, name TEXT NOT NULL, category TEXT, priceCents INTEGER NOT NULL, active INTEGER NOT NULL, imageUrl TEXT, version INTEGER NOT NULL, updatedAt TEXT, unit TEXT);
+CREATE TABLE orders (id TEXT PRIMARY KEY NOT NULL, totalCents INTEGER NOT NULL, paymentStatus TEXT NOT NULL, syncStatus TEXT NOT NULL, itemsJson TEXT NOT NULL, createdAt INTEGER NOT NULL, operatorId TEXT, deviceId TEXT, stoneTransactionId TEXT);
+CREATE TABLE categories (id TEXT PRIMARY KEY NOT NULL, name TEXT NOT NULL, sortOrder INTEGER NOT NULL, active INTEGER NOT NULL);
+CREATE TABLE products_local (id TEXT PRIMARY KEY NOT NULL, categoryId TEXT, name TEXT NOT NULL, priceCents INTEGER NOT NULL, active INTEGER NOT NULL, imagePath TEXT);
+CREATE TABLE tables (tableId TEXT PRIMARY KEY NOT NULL, number INTEGER NOT NULL, status TEXT NOT NULL, openedAt INTEGER, closedAt INTEGER);
+CREATE TABLE table_orders (comandaId TEXT PRIMARY KEY NOT NULL, tableId TEXT NOT NULL, status TEXT NOT NULL, totalCents INTEGER NOT NULL, openedAt INTEGER NOT NULL, closedAt INTEGER);
+CREATE TABLE table_order_items (itemId TEXT PRIMARY KEY NOT NULL, comandaId TEXT NOT NULL, productId TEXT, productName TEXT NOT NULL, unitCents INTEGER NOT NULL, qty INTEGER NOT NULL, addedAt INTEGER NOT NULL);
+CREATE TABLE payments (paymentId TEXT PRIMARY KEY NOT NULL, orderId TEXT NOT NULL, amountCents INTEGER NOT NULL, method TEXT NOT NULL, status TEXT NOT NULL, receivedCents INTEGER, changeCents INTEGER, installments INTEGER NOT NULL, transactionRef TEXT, createdAt INTEGER NOT NULL);
+CREATE TABLE cash_sessions (sessionId TEXT PRIMARY KEY NOT NULL, operator TEXT NOT NULL, openedAt INTEGER NOT NULL, closedAt INTEGER, openingBalanceCents INTEGER NOT NULL, status TEXT NOT NULL);
+CREATE TABLE cash_movements (movementId TEXT PRIMARY KEY NOT NULL, sessionId TEXT NOT NULL, type TEXT NOT NULL, amountCents INTEGER NOT NULL, reason TEXT, orderId TEXT, createdAt INTEGER NOT NULL);
+CREATE TABLE cash_closings (closingId TEXT PRIMARY KEY NOT NULL, sessionId TEXT NOT NULL, closedAt INTEGER NOT NULL, expectedCashCents INTEGER NOT NULL, countedCashCents INTEGER NOT NULL, differenceCents INTEGER NOT NULL, totalSalesCents INTEGER NOT NULL, totalCashCents INTEGER NOT NULL, totalPixCents INTEGER NOT NULL, totalDebitCents INTEGER NOT NULL, totalCreditCents INTEGER NOT NULL, sangriasCents INTEGER NOT NULL, suppliesCents INTEGER NOT NULL, operator TEXT NOT NULL, note TEXT);

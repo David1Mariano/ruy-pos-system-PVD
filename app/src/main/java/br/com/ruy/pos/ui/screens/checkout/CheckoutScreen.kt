@@ -2,6 +2,7 @@ package br.com.ruy.pos.ui.screens.checkout
 
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -81,6 +82,18 @@ fun CheckoutScreen(
     var setup by remember { mutableStateOf(false) }
     var reconciliation by remember { mutableStateOf(false) }
     var external by remember { mutableStateOf(false) }
+    var tapProof by remember { mutableStateOf(false) }
+    var tapCredit by remember { mutableStateOf(false) }
+    var stoneAccessChecked by remember { mutableStateOf(false) }
+    var readiness by remember { mutableStateOf(TapStoneReadiness.read(context)) }
+    val lifecycle = androidx.compose.ui.platform.LocalLifecycleOwner.current.lifecycle
+    DisposableEffect(lifecycle) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) readiness = TapStoneReadiness.read(context)
+        }
+        lifecycle.addObserver(observer)
+        onDispose { lifecycle.removeObserver(observer) }
+    }
     var configuration by remember { mutableStateOf(StoneConfiguration.read(context)) }
     val stone = remember(configuration) { StonePaymentGateway(context, configuration) }
     val active by remember { repo.payments.observeActive() }.collectAsState(initial = null)
@@ -127,7 +140,18 @@ fun CheckoutScreen(
             }
         })
     if (setup) StoneSetupDialog(configuration, onDismiss = { setup = false }, onSaved = { configuration = it; setup = false })
-    if (reconciliation && attempt != null && payment != null) StoneReconciliationDialog(attempt, payment, processing,
+    if (tapProof && attempt?.origin == "TAPSTONE_EXTERNAL" && payment != null) TapStoneDialog(attempt, payment, processing, error,
+        onDismiss = { tapProof = false; error = null }, onConfirm = { proof ->
+            if (!processing) {
+                processing = true
+                scope.launch {
+                    try { repo.payments.confirmTapStone(proof); tapProof = false; error = null }
+                    catch (e: Exception) { error = e.message }
+                    finally { processing = false }
+                }
+            }
+        })
+    if (reconciliation && attempt != null && payment != null && attempt.origin != "TAPSTONE_EXTERNAL") StoneReconciliationDialog(attempt, payment, processing,
         error = error, onDismiss = { reconciliation = false; error = null }, onConfirm = { input ->
             if (!processing) {
                 processing = true
@@ -161,8 +185,8 @@ fun CheckoutScreen(
             }
             RuyCard {
                 Text("Forma de pagamento", style = MaterialTheme.typography.titleSmall)
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    listOf("DINHEIRO" to "Dinheiro", "PIX" to "Pix", "DEBITO" to "Débito", "CREDITO" to "Crédito").forEach { (value, label) ->
+                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    listOf("DINHEIRO" to "Dinheiro", "PIX" to "Pix externo", "DEBITO" to "Débito externo", "CREDITO" to "Crédito externo").forEach { (value, label) ->
                         FilterChip(selected = method == value, enabled = !processing && active == null,
                             onClick = { method = value }, label = { Text(label) })
                     }
@@ -191,14 +215,51 @@ fun CheckoutScreen(
                     Text(stone.unavailableReason() ?: "Aplicativo resolvido; pagamento sujeito ao suporte do terminal", style = MaterialTheme.typography.bodySmall)
                     TextButton(enabled = !processing && active == null, onClick = { setup = true }) { Text("Conferir Ajustes Stone") }
                     if (method == "PIX") Text("Pix depende do equipamento. QR exibido não confirma recebimento.", style = MaterialTheme.typography.bodySmall)
-                    TextButton(enabled = !processing && active == null, onClick = { external = true }) { Text("Pagamento externo já ocorreu (maquininha/banco)") }
+                    TextButton(enabled = !br.com.ruy.pos.BuildConfig.HOMOLOGATION && !processing && active == null, onClick = { external = true }) { Text("Pagamento externo já ocorreu (maquininha/banco)") }
+                }
+            }
+            RuyCard {
+                Text("Aproximação no celular", style = MaterialTheme.typography.titleSmall)
+                Text(readiness.description, style = MaterialTheme.typography.bodySmall)
+                Text("TapStone processado no aplicativo oficial Stone. Confirmação manual; sem integração automática.")
+                if (br.com.ruy.pos.BuildConfig.HOMOLOGATION) {
+                    Text("Indisponível para cobrança na homologação. Use pagamento simulado ou dinheiro fictício.")
+                    TextButton(enabled = !processing && active == null && remaining > 0 && order != null, onClick = {
+                        processing = true
+                        scope.launch {
+                            try { repo.payments.confirmSimulated(requireNotNull(orderId), amountCents) }
+                            catch (e: Exception) { error = e.message }
+                            finally { processing = false }
+                        }
+                    }) { Text("Pagamento simulado — dados fictícios") }
+                } else {
+                    CheckLine("Conferi: aplicativo oficial Stone instalado e TapStone autorizado na conta", stoneAccessChecked) { stoneAccessChecked = it }
+                    Row {
+                        FilterChip(!tapCredit, { tapCredit = false }, label = { Text("Débito à vista") }, enabled = !processing)
+                        FilterChip(tapCredit, { tapCredit = true }, label = { Text("Crédito à vista") }, enabled = !processing)
+                    }
+                    TextButton(onClick = { readiness = TapStoneReadiness.read(context) }) { Text("Atualizar compatibilidade") }
+                    TextButton(enabled = !processing && active == null && readiness.locallyReady && stoneAccessChecked && order != null && remaining > 0,
+                        onClick = {
+                            processing = true
+                            scope.launch {
+                                try {
+                                    readiness = TapStoneReadiness.read(context)
+                                    check(readiness.locallyReady) { "Android 10+, NFC ativo e internet necessários" }
+                                    repo.payments.beginTapStone(requireNotNull(orderId), amountCents, if (tapCredit) "TAPSTONE_CREDIT" else "TAPSTONE_DEBIT")
+                                    tapProof = true
+                                } catch (e: Exception) { error = e.message }
+                                finally { processing = false }
+                            }
+                        }) { Text("Preparar conferência Stone externa") }
+                    Text("Abra a Stone manualmente. Disponibilidade da conta e do aplicativo confirmada pelo operador.")
                 }
             }
             if (attempt != null) RuyCard {
                 Text("Stone ${attempt.state} • referência ${attempt.stoneOrderId}", style = MaterialTheme.typography.titleSmall)
                 Text(attempt.detail ?: "Aguardando retorno. Não inicie outra cobrança.")
                 Text("ATK informado: ${attempt.atk ?: "não informado"}", style = MaterialTheme.typography.bodySmall)
-                TextButton(enabled = !processing, onClick = { error = null; reconciliation = true }) { Text("Conferir comprovante/extrato e conciliar") }
+                TextButton(enabled = !processing, onClick = { error = null; if (attempt.origin == "TAPSTONE_EXTERNAL") tapProof = true else reconciliation = true }) { Text("Conferir comprovante/extrato e conciliar") }
             }
             if (active != null && attempt == null) Text("Existe pagamento pendente em outro pedido. Retome-o antes de cobrar novamente.")
             if (legacy != null && active == null) TextButton(enabled = !processing, onClick = {
@@ -224,17 +285,10 @@ fun CheckoutScreen(
                                 repo.payments.confirmCash(id, amountCents, receivedCents)
                                 notify("Dinheiro registrado. Troco: ${reais(change)}")
                             } else {
-                                check(stone.isAvailable()) { stone.unavailableReason().orEmpty() }
-                                val count = if (method == "CREDITO") requireNotNull(installments.toIntOrNull()) { "Parcelas inválidas" } else 1
-                                val type = if (method == "CREDITO") installmentType else "NONE"
-                                stone.buildIntent(PaymentRequest(id, amountCents, method, count, "1", type))
-                                val created = repo.payments.createAttempt(id, amountCents, method, count, type)
-                                val request = repo.payments.request(created)
-                                if (repo.payments.claimLaunch(created.stoneOrderId)) {
-                                    val result = stone.process(request)
-                                    if (result.status != "AGUARDANDO") repo.payments.launchFailed(created.stoneOrderId, result.status == "NAO_INICIADO")
-                                    notify(result.message ?: "Retome o pagamento para conciliar")
-                                }
+                                check(!br.com.ruy.pos.BuildConfig.HOMOLOGATION) { "Use pagamento simulado em homologação" }
+                                external = true
+                                return@launch
+
                             }
                         } catch (e: Exception) { error = e.message ?: "Falha no pagamento; confira as tentativas persistidas" }
                         finally { processing = false }

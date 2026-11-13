@@ -66,6 +66,12 @@ fun RuyNavHost(repo: Repository, start: String = "sales", onExit: () -> Unit, on
     }
     val showNav = route == "sales" || route == "tables" || route == "orders" || route == "products" || route == "categories" || route == "cash" || route == "backup" || route == "reports"
     Scaffold(
+        topBar = {
+            if (br.com.ruy.pos.BuildConfig.HOMOLOGATION) androidx.compose.material3.Surface(color = RuyRed) {
+                Text(br.com.ruy.pos.Homologation.LABEL + " • DADOS FICTÍCIOS", color = androidx.compose.ui.graphics.Color.White,
+                    modifier = Modifier.padding(androidx.compose.ui.unit.Dp(8f)))
+            }
+        },
         bottomBar = {
             if (showNav) {
                 NavigationBar {

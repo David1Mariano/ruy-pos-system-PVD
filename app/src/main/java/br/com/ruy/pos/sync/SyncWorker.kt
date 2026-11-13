@@ -9,6 +9,7 @@ import org.json.JSONObject
 
 class SyncWorker(appContext: Context, params: WorkerParameters) : CoroutineWorker(appContext, params) {
     override suspend fun doWork(): androidx.work.ListenableWorker.Result {
+        if (br.com.ruy.pos.BuildConfig.HOMOLOGATION) return androidx.work.ListenableWorker.Result.success()
         val prefs = applicationContext.getSharedPreferences("ruy_pos_v1", Context.MODE_PRIVATE)
         val url = prefs.getString("sync_url", "") ?: ""
         val token = prefs.getString("device_token", "") ?: ""

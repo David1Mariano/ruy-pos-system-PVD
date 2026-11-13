@@ -31,10 +31,10 @@ class StoneGatewaySimulatedTest {
             }
         }
         shadowOf(context.packageManager).addResolveInfoForIntent(Intent(Intent.ACTION_VIEW, Uri.parse("payment-app://pay")), info)
-        shadowOf(context.packageManager).addResolveInfoForIntent(StonePaymentGateway(context, configuration).buildIntent(request), info)
+        shadowOf(context.packageManager).addResolveInfoForIntent(StonePaymentGateway(context, configuration, paymentEnabled = true).buildIntent(request), info)
     }
     @Test fun buildsPaymentIntentWithIntegerCentsNumericReferenceAndFixedAmount() {
-        val intent = StonePaymentGateway(context, configuration).buildIntent(request)
+        val intent = StonePaymentGateway(context, configuration, paymentEnabled = true).buildIntent(request)
         assertEquals(Intent.ACTION_VIEW, intent.action)
         assertEquals("payment-app", intent.data!!.scheme)
         assertEquals("pay", intent.data!!.host)
@@ -47,20 +47,20 @@ class StoneGatewaySimulatedTest {
         assertNull(intent.data!!.getQueryParameter("installment_count"))
     }
     @Test fun creditAtSightUsesNoneAndOmitsCount() {
-        val data = StonePaymentGateway(context, configuration).buildIntent(request.copy(method = "CREDIT")).data!!
+        val data = StonePaymentGateway(context, configuration, paymentEnabled = true).buildIntent(request.copy(method = "CREDIT")).data!!
         assertEquals("NONE", data.getQueryParameter("installment_type"))
         assertNull(data.getQueryParameter("installment_count"))
     }
     @Test fun merchantAndIssuerSendCountOnlyWhenApplicable() {
         for (type in listOf("MERCHANT", "ISSUER")) {
-            val data = StonePaymentGateway(context, configuration).buildIntent(request.copy(method = "CREDIT", installments = 3, installmentType = type)).data!!
+            val data = StonePaymentGateway(context, configuration, paymentEnabled = true).buildIntent(request.copy(method = "CREDIT", installments = 3, installmentType = type)).data!!
             assertEquals(type, data.getQueryParameter("installment_type"))
             assertEquals("3", data.getQueryParameter("installment_count"))
         }
     }
     @Test fun pixInstantAndVoucherDoNotInventCreditParameters() {
         for (method in listOf("PIX", "INSTANT_PAYMENT", "VOUCHER")) {
-            val data = StonePaymentGateway(context, configuration).buildIntent(request.copy(method = method)).data!!
+            val data = StonePaymentGateway(context, configuration, paymentEnabled = true).buildIntent(request.copy(method = method)).data!!
             assertEquals(method, data.getQueryParameter("transaction_type"))
             assertNull(data.getQueryParameter("installment_type"))
             assertNull(data.getQueryParameter("installment_count"))
@@ -79,7 +79,7 @@ class StoneGatewaySimulatedTest {
             .buildIntent(request.copy(method = "CREDIT", installments = 2, installmentType = "ISSUER")) }
     }
     @Test fun unresolvedActivityIsReportedAsUnresolvedNotAppAbsent() {
-        val gateway = StonePaymentGateway(context, configuration)
+        val gateway = StonePaymentGateway(context, configuration, paymentEnabled = true)
         assertFalse(gateway.isAvailable())
         assertTrue(gateway.unavailableReason()!!.contains("visibilidade"))
         assertEquals("NAO_INICIADO", gateway.process(request).status)
@@ -89,7 +89,7 @@ class StoneGatewaySimulatedTest {
         val fake = object : ContextWrapper(context) {
             override fun startActivity(intent: Intent) { throw ActivityNotFoundException("SIMULATED") }
         }
-        val gateway = StonePaymentGateway(fake, configuration)
+        val gateway = StonePaymentGateway(fake, configuration, paymentEnabled = true)
         assertTrue(gateway.isAvailable())
         assertEquals("NAO_INICIADO", gateway.process(request).status)
     }
@@ -98,15 +98,15 @@ class StoneGatewaySimulatedTest {
         val blocked = object : ContextWrapper(context) {
             override fun startActivity(intent: Intent) { throw SecurityException("SIMULATED") }
         }
-        assertEquals("NAO_INICIADO", StonePaymentGateway(blocked, configuration).process(request).status)
+        assertEquals("NAO_INICIADO", StonePaymentGateway(blocked, configuration, paymentEnabled = true).process(request).status)
         val ambiguous = object : ContextWrapper(context) {
             override fun startActivity(intent: Intent) { throw IllegalStateException("SIMULATED") }
         }
-        assertEquals("INDETERMINADO", StonePaymentGateway(ambiguous, configuration).process(request).status)
+        assertEquals("INDETERMINADO", StonePaymentGateway(ambiguous, configuration, paymentEnabled = true).process(request).status)
         val ambiguousArgument = object : ContextWrapper(context) {
             override fun startActivity(intent: Intent) { throw IllegalArgumentException("SIMULATED after launch invoked") }
         }
-        assertEquals("INDETERMINADO", StonePaymentGateway(ambiguousArgument, configuration).process(request).status)
+        assertEquals("INDETERMINADO", StonePaymentGateway(ambiguousArgument, configuration, paymentEnabled = true).process(request).status)
     }
     @Test fun successfulLaunchIsExplicitAndRemainsAwaitingReturn() {
         registerHandler()
@@ -114,7 +114,7 @@ class StoneGatewaySimulatedTest {
         val fake = object : ContextWrapper(context) {
             override fun startActivity(intent: Intent) { launched = intent }
         }
-        val result = StonePaymentGateway(fake, configuration).process(request)
+        val result = StonePaymentGateway(fake, configuration, paymentEnabled = true).process(request)
         assertFalse(result.success)
         assertEquals("AGUARDANDO", result.status)
         assertEquals("br.com.stone.simulated", launched!!.component!!.packageName)
@@ -127,7 +127,8 @@ class StoneGatewaySimulatedTest {
         val ns = "http://schemas.android.com/apk/res/android"
         assertEquals("payment-app", data.getAttributeNS(ns, "scheme"))
         assertEquals("pay", data.getAttributeNS(ns, "host"))
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("ruypos-stone://pay-response?code=0"))
+        val scheme = if (br.com.ruy.pos.BuildConfig.HOMOLOGATION) "ruypos-stone-homologation" else "ruypos-stone"
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("$scheme://pay-response?code=0"))
         val activity = intent.resolveActivity(context.packageManager)
         assertEquals("br.com.ruy.pos.ui.activity.PosActivity", activity!!.className)
         assertEquals(ActivityInfo.LAUNCH_SINGLE_TASK, context.packageManager.getActivityInfo(activity, 0).launchMode)

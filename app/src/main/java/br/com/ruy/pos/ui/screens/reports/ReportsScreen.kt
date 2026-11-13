@@ -97,13 +97,7 @@ fun ReportsScreen(repo: Repository, onBack: () -> Unit) {
                         val pay = payments
                         val c = closings.firstOrNull() ?: return@launch
                         val f = PdfReport.generateCashClosing(context, c, mv, pay, c.operator)
-                        val share = Intent(Intent.ACTION_SEND).apply {
-                            type = "application/pdf"
-                            putExtra(Intent.EXTRA_TEXT, "Relatório Ruy POS")
-                            putExtra(Intent.EXTRA_STREAM, Uri.fromFile(f))
-                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                        }
+                        val share = br.com.ruy.pos.report.ShareFiles.intent(context, f, "application/pdf")
                         context.startActivity(Intent.createChooser(share, "Compartilhar relatório"))
                         Toast.makeText(context, "Relatório gerado", Toast.LENGTH_SHORT).show()
                     } catch (e: Exception) { Toast.makeText(context, e.message ?: "Falha no PDF", Toast.LENGTH_LONG).show() }

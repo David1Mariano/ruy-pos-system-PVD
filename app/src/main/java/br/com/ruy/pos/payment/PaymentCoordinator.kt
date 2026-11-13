@@ -19,6 +19,7 @@ class PaymentCoordinator(private val db: AppDatabase) {
         }
     }
     private suspend fun remaining(order: OrderEntity): Int {
+        check(order.paymentStatus != "CANCELADO") { "Pedido cancelado" }
         val paid = db.paymentDao().getByOrder(order.id).filter { it.status == "PAGO" }.sumOf { it.amountCents.toLong() }
         return (order.totalCents.toLong() - paid).coerceAtLeast(0).toInt()
     }
@@ -38,7 +39,7 @@ class PaymentCoordinator(private val db: AppDatabase) {
             orderId = orderId, installmentType = installmentType)
         val reference = db.stoneDao().insert(attempt)
         check(reference > 0) { "Referência Stone esgotada" }
-        db.orderDao().update(order.copy(paymentStatus = "PENDENTE", syncStatus = "PENDING"))
+        db.orderDao().update(order.copy(paymentStatus = "PENDENTE", syncStatus = if (br.com.ruy.pos.BuildConfig.HOMOLOGATION) "HOMOLOGATION" else "PENDING"))
         attempt.copy(stoneOrderId = reference)
     }
 
@@ -96,6 +97,7 @@ class PaymentCoordinator(private val db: AppDatabase) {
             if (db.stoneDao().event(StoneCallbackEventEntity(callback.fingerprint, attempt?.attemptId,
                     if (attempt == null) "DESCONHECIDO" else "RECEBIDO", JSONObject(callback.fields).toString())) == -1L) return@withTransaction "Retorno duplicado ignorado"
             if (attempt == null) return@withTransaction "Retorno de tentativa desconhecida; nenhuma baixa realizada"
+            if (attempt.origin == "TAPSTONE_EXTERNAL") return@withTransaction "TapStone externo exige conferência manual; retorno ignorado"
             if (attempt.activeSlot == null) return@withTransaction "Tentativa já encerrada; retorno auditado sem nova baixa"
             val p = db.paymentDao().byId(attempt.paymentId)
             val order = db.orderDao().byId(attempt.orderId)
@@ -193,14 +195,79 @@ class PaymentCoordinator(private val db: AppDatabase) {
     /** Payment executed on an EXTERNAL provider/machine (other POS, bank app, Pix manual). */
     suspend fun confirmExternal(orderId: String, amountCents: Int, method: String, operator: String,
                                 evidence: String, installments: Int = 1, transactionRef: String? = null): String = db.withTransaction {
+        val normalized = requireNotNull(StoneProtocol.method(method)) { "Modalidade externa inválida" }
+        require(normalized in setOf("PIX", "DEBIT", "CREDIT"))
+        require(installments in 1..99 && (normalized == "CREDIT" || installments == 1))
         require(operator.trim().length >= 3) { "Informe o operador responsável (3 ou mais caracteres)" }
         require(evidence.trim().length >= 8) { "Informe comprovante/extrato consultado (8 ou mais caracteres)" }
         requireNoFlight()
         val order = requireNotNull(db.orderDao().byId(orderId)) { "Pedido não encontrado" }
         require(amountCents in 1..remaining(order)) { "Valor excede o saldo do pedido" }
         val session = requireNotNull(db.cashSessionDao().getOpen()) { "Abra o Caixa antes de registrar recebimento" }
-        val p = PaymentEntity(UUID.randomUUID().toString(), orderId, amountCents, method, "PAGO_MANUALMENTE",
-            null, null, installments, transactionRef, cashSessionId = session.sessionId)
+        val ref = transactionRef?.trim()?.takeIf { it.isNotEmpty() }
+        require(ref == null || ref.matches(Regex("[A-Za-z0-9._-]{3,128}"))) { "Referência inválida; não informe dados de cartão" }
+        check(ref == null || db.paymentDao().getAll().none { it.status == "PAGO" && it.transactionRef == ref }) { "Comprovante já utilizado" }
+        val p = PaymentEntity(UUID.randomUUID().toString(), orderId, amountCents, normalized, "PAGO_MANUALMENTE",
+            null, null, installments, ref, cashSessionId = session.sessionId)
+        db.paymentDao().insert(p)
+        settle(p)
+        db.stoneDao().insert(StoneAttemptEntity(attemptId = UUID.randomUUID().toString(), paymentId = p.paymentId,
+            orderId = orderId, installmentType = "NONE", origin = "EXTERNAL_MANUAL", state = "CONFIRMADO", activeSlot = null,
+            reconciledBy = operator.trim(), reconciliationEvidence = evidence.trim(), detail = "PAGO_MANUALMENTE; provedor externo"))
+        p.paymentId
+    }
+
+    /** Saves intent to collect externally; never invokes a financial app or network. */
+    suspend fun beginTapStone(orderId: String, amountCents: Int, method: String): StoneAttemptEntity = db.withTransaction {
+        requireNoFlight()
+        require(method in setOf("TAPSTONE_DEBIT", "TAPSTONE_CREDIT"))
+        val order = requireNotNull(db.orderDao().byId(orderId))
+        require(amountCents in 1..remaining(order)) { "Valor excede saldo" }
+        verifyComanda(order)
+        val session = requireNotNull(db.cashSessionDao().getOpen()) { "Abra o Caixa" }
+        val p = PaymentEntity(UUID.randomUUID().toString(), orderId, amountCents, method, "AGUARDANDO", cashSessionId = session.sessionId)
+        db.paymentDao().insert(p)
+        val a = StoneAttemptEntity(attemptId = UUID.randomUUID().toString(), paymentId = p.paymentId, orderId = orderId,
+            installmentType = "NONE", origin = "TAPSTONE_EXTERNAL", state = "EM_CONFERENCIA",
+            detail = "Cobrança somente no aplicativo oficial Stone. Sem confirmação automática; referência local não enviada à Stone.")
+        db.orderDao().update(order.copy(paymentStatus = "PENDENTE", syncStatus = if (br.com.ruy.pos.BuildConfig.HOMOLOGATION) "HOMOLOGATION" else "PENDING"))
+        a.copy(stoneOrderId = db.stoneDao().insert(a))
+    }
+
+    data class TapStoneProof(val reference: Long, val orderId: String, val amountCents: Int, val method: String,
+        val received: Boolean, val operator: String, val evidence: String, val receipt: String, val checked: Boolean)
+
+    suspend fun confirmTapStone(input: TapStoneProof) = db.withTransaction {
+        require(input.checked && input.operator.trim().length in 3..80 && input.evidence.trim().length in 8..500) {
+            "Confira o comprovante/extrato e informe operador e evidência; não informe dados de cartão"
+        }
+        val a = requireNotNull(db.stoneDao().byReference(input.reference))
+        check(a.origin == "TAPSTONE_EXTERNAL")
+        val p = requireNotNull(db.paymentDao().byId(a.paymentId))
+        require(input.orderId == p.orderId && input.amountCents == p.amountCents && input.method == p.method) {
+            "Pedido, valor ou modalidade divergente do comprovante"
+        }
+        val receipt = input.receipt.trim()
+        if (a.activeSlot == null) {
+            check((a.state == "CONFIRMADO") == input.received && (!input.received || p.transactionRef == receipt)) { "Confirmação conflitante" }
+            return@withTransaction
+        }
+        if (input.received) {
+            require(receipt.matches(Regex("[A-Za-z0-9._-]{3,128}"))) { "Informe referência do comprovante aprovado; nunca número do cartão" }
+            check(db.paymentDao().getAll().none { it.paymentId != p.paymentId && it.status == "PAGO" && it.transactionRef == receipt }) { "Comprovante já utilizado" }
+            settle(p.copy(transactionRef = receipt))
+        } else db.paymentDao().update(p.copy(status = "SEM_RECEBIMENTO"))
+        db.stoneDao().update(a.copy(state = if (input.received) "CONFIRMADO" else "SEM_RECEBIMENTO", activeSlot = null,
+            reconciledBy = input.operator.trim(), reconciliationEvidence = "MANUAL_TAPSTONE: ${input.evidence.trim()}",
+            detail = if (input.received) "PAGO_MANUALMENTE após conferência Stone" else "Extrato conferido: sem recebimento e sem transação em andamento",
+            updatedAt = System.currentTimeMillis()))
+    }
+
+    suspend fun confirmSimulated(orderId: String, amountCents: Int): String = db.withTransaction {
+        check(br.com.ruy.pos.BuildConfig.HOMOLOGATION) { "Simulação exclusiva da homologação" }
+        requireNoFlight()
+        val session = requireNotNull(db.cashSessionDao().getOpen())
+        val p = PaymentEntity(UUID.randomUUID().toString(), orderId, amountCents, "SIMULADO", "CRIADA", cashSessionId = session.sessionId)
         db.paymentDao().insert(p)
         settle(p)
         p.paymentId
@@ -227,7 +294,7 @@ class PaymentCoordinator(private val db: AppDatabase) {
         db.cashMovementDao().insert(CashMovementEntity("payment:${payment.paymentId}", session.sessionId,
             "VENDA_${payment.method}", payment.amountCents, "Recebimento confirmado", order.id))
         val fullyPaid = remaining(order) == 0
-        db.orderDao().update(order.copy(paymentStatus = if (fullyPaid) "PAGO" else "PARCIAL", syncStatus = "PENDING",
+        db.orderDao().update(order.copy(paymentStatus = if (fullyPaid) "PAGO" else "PARCIAL", syncStatus = if (br.com.ruy.pos.BuildConfig.HOMOLOGATION) "HOMOLOGATION" else "PENDING",
             stoneTransactionId = payment.transactionRef ?: order.stoneTransactionId))
         if (fullyPaid) order.comandaId?.let { id ->
             val comanda = requireNotNull(db.tableOrderDao().byId(id))
@@ -254,7 +321,9 @@ class PaymentCoordinator(private val db: AppDatabase) {
         val closing = CashClosingEntity(UUID.randomUUID().toString(), sessionId, System.currentTimeMillis(), expected,
             countedCents, checkedCents(countedCents.toLong() - expected), sales, cash,
             checkedCents(total("VENDA_PIX").toLong() + total("VENDA_INSTANT_PAYMENT")),
-            total("VENDA_DEBIT"), total("VENDA_CREDIT"), total("SANGRIA"), total("SUPRIMENTO"), session.operator, null)
+            checkedCents(total("VENDA_DEBIT").toLong() + total("VENDA_TAPSTONE_DEBIT")),
+            checkedCents(total("VENDA_CREDIT").toLong() + total("VENDA_TAPSTONE_CREDIT")), total("SANGRIA"), total("SUPRIMENTO"), session.operator,
+            if (br.com.ruy.pos.BuildConfig.HOMOLOGATION) "HOMOLOGAÇÃO: dados e recebimentos fictícios" else null)
         db.cashClosingDao().insert(closing)
         db.cashSessionDao().close(sessionId, closing.closedAt)
         closing

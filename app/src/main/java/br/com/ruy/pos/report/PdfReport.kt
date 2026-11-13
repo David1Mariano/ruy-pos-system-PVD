@@ -28,10 +28,30 @@ object PdfReport {
         val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale("pt", "BR"))
         val reais: (Long) -> String = { NumberFormat.getCurrencyInstance(Locale("pt", "BR")).format(it / 100.0) }
 
-        val page = doc.startPage(PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, 1).create())
-        val canvas = page.canvas
+        var pageNumber = 1
+        var page = doc.startPage(PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, pageNumber).create())
+        var canvas = page.canvas
         var y = MARGIN
-        fun line(text: String, paint: android.graphics.Paint) { canvas.drawText(text, MARGIN, y, paint); y += LINE_HEIGHT }
+        fun watermark() {
+            if (br.com.ruy.pos.BuildConfig.HOMOLOGATION) {
+                canvas.drawText("HOMOLOGAÇÃO — DADOS FICTÍCIOS — SEM VALOR FINANCEIRO", MARGIN, y, small)
+                y += LINE_HEIGHT
+            }
+        }
+        watermark()
+        fun line(text: String, paint: android.graphics.Paint) {
+            var rest = text.ifEmpty { " " }
+            while (rest.isNotEmpty()) {
+                if (y > PAGE_HEIGHT - MARGIN) {
+                    doc.finishPage(page)
+                    page = doc.startPage(PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, ++pageNumber).create())
+                    canvas = page.canvas; y = MARGIN; watermark()
+                }
+                val count = paint.breakText(rest, true, PAGE_WIDTH - 2 * MARGIN, null).coerceAtLeast(1)
+                canvas.drawText(rest.take(count), MARGIN, y, paint)
+                y += LINE_HEIGHT; rest = rest.drop(count)
+            }
+        }
 
         line("Relatório de Fechamento de Caixa", title); y += 6f
         line("Caixa #${closing.closingId.take(8)} • ${sdf.format(Date(closing.closedAt))}", body); y += 4f
@@ -52,7 +72,7 @@ object PdfReport {
         y += 6f
         line("Gerado pelo Ruy POS System • ${sdf.format(Date())}", small)
         doc.finishPage(page)
-        val out = File(context.cacheDir, "caixa_${closing.closingId.take(8)}.pdf")
+        val out = ShareFiles.exportFile(context, "caixa_${closing.closingId.take(8)}.pdf")
         ByteArrayOutputStream().use { baos ->
             doc.writeTo(baos)
             out.writeBytes(baos.toByteArray())

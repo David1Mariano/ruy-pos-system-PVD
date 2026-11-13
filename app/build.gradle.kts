@@ -10,11 +10,27 @@ android {
         applicationId = "br.com.ruy.pos"
         minSdk = 23
         targetSdk = 34
-        versionCode = 20
-        versionName = "0.9.2"
+        versionCode = 21
+        versionName = "0.9.3"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        manifestPlaceholders["stoneReturnScheme"] = "ruypos-stone"
+        buildConfigField("boolean", "HOMOLOGATION", "false")
+        buildConfigField("boolean", "SMART_POS_REAL_ENABLED", "false")
     }
+    buildTypes {
+        create("homologation") {
+            initWith(getByName("debug"))
+            applicationIdSuffix = ".homologation"
+            versionNameSuffix = "-homologacao"
+            matchingFallbacks += "debug"
+            manifestPlaceholders["stoneReturnScheme"] = "ruypos-stone-homologation"
+            buildConfigField("boolean", "HOMOLOGATION", "true")
+        }
+    }
+    testBuildType = "homologation"
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.15"
@@ -32,6 +48,11 @@ dependencies {
     testImplementation("org.robolectric:robolectric:4.13")
     testImplementation("androidx.test:core:1.6.1")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+    androidTestImplementation("androidx.test:runner:1.6.1")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.room:room-testing:2.6.1")
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    "homologationImplementation"("androidx.compose.ui:ui-test-manifest")
     implementation("androidx.room:room-runtime:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")
     kapt("androidx.room:room-compiler:2.6.1")

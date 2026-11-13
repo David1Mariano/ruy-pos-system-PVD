@@ -22,7 +22,7 @@ import java.util.UUID
 class StoneMigrationSimulatedTest {
     @Test fun migratesWithoutDestroyingOrdersPaymentsCashOrOccupiedTables() = runBlocking {
         val context: Context = ApplicationProvider.getApplicationContext()
-        val name = "migration-simulated-${UUID.randomUUID()}.db"
+        val name = "m.db" // Robolectric uses a per-test directory; keep Windows SQLite sidecars below MAX_PATH.
         val helper = FrameworkSQLiteOpenHelperFactory().create(SupportSQLiteOpenHelper.Configuration.builder(context)
             .name(name).callback(object : SupportSQLiteOpenHelper.Callback(7) {
                 override fun onCreate(db: SupportSQLiteDatabase) {

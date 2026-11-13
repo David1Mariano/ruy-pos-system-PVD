@@ -36,6 +36,11 @@ class MainActivity : Activity() {
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (BuildConfig.HOMOLOGATION) {
+            startActivity(android.content.Intent(this, br.com.ruy.pos.ui.activity.PosActivity::class.java))
+            finish()
+            return
+        }
         repo = Repository(this)
         scheduleSync()
         loadCatalog()

@@ -1,4 +1,4 @@
-﻿package br.com.ruy.pos.data
+package br.com.ruy.pos.data
 
 import android.content.Context
 import br.com.ruy.pos.data.local.AppDatabase
@@ -80,7 +80,7 @@ class Repository internal constructor(private val db: AppDatabase) {
             id = id,
             totalCents = totalCents,
             paymentStatus = "NAO_PAGO",
-            syncStatus = "PENDING",
+            syncStatus = if (br.com.ruy.pos.BuildConfig.HOMOLOGATION) "HOMOLOGATION" else "PENDING",
             itemsJson = arr.toString(),
             createdAt = System.currentTimeMillis(),
             operatorId = operatorId,
@@ -113,7 +113,9 @@ class Repository internal constructor(private val db: AppDatabase) {
         db.cashSessionDao().insert(br.com.ruy.pos.data.local.CashSessionEntity(sessionId = id, operator = operator, openedAt = System.currentTimeMillis(), closedAt = null, openingBalanceCents = openingBalanceCents, status = "ABERTO"))
         id
     }
-    suspend fun addCashMovement(sessionId: String, type: String, amountCents: Int, reason: String?, orderId: String? = null) {
+    suspend fun addCashMovement(sessionId: String, type: String, amountCents: Int, reason: String?, orderId: String? = null) = db.withTransaction {
+        require(type in setOf("SANGRIA", "SUPRIMENTO") && amountCents > 0 && !reason.isNullOrBlank()) { "Movimento de caixa inválido" }
+        check(db.cashSessionDao().getOpen()?.sessionId == sessionId) { "Caixa fechado ou divergente" }
         val mid = UUID.randomUUID().toString()
         db.cashMovementDao().insert(br.com.ruy.pos.data.local.CashMovementEntity(movementId = mid, sessionId = sessionId, type = type, amountCents = amountCents, reason = reason, orderId = orderId, createdAt = System.currentTimeMillis()))
     }
@@ -172,7 +174,7 @@ class Repository internal constructor(private val db: AppDatabase) {
             val arr = JSONArray()
             items.forEach { arr.put(JSONObject().put("name", it.productName).put("qty", it.qty).put("unitCents", it.unitCents)) }
             val paid = paymentDao.getByOrder(order.id).any { it.status == "PAGO" }
-            orderDao.update(order.copy(totalCents = total, itemsJson = arr.toString(), paymentStatus = if (paid) "PARCIAL" else "NAO_PAGO", syncStatus = "PENDING"))
+            orderDao.update(order.copy(totalCents = total, itemsJson = arr.toString(), paymentStatus = if (paid) "PARCIAL" else "NAO_PAGO", syncStatus = if (br.com.ruy.pos.BuildConfig.HOMOLOGATION) "HOMOLOGATION" else "PENDING"))
         }
     }
 
