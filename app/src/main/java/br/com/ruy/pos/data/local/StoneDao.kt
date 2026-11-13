@@ -11,6 +11,8 @@ interface StoneDao {
     suspend fun byReference(reference: Long): StoneAttemptEntity?
     @Query("SELECT * FROM stone_attempts WHERE paymentId = :paymentId LIMIT 1")
     suspend fun byPayment(paymentId: String): StoneAttemptEntity?
+    @Query("SELECT * FROM stone_attempts WHERE attemptId = :attemptId LIMIT 1")
+    suspend fun byAttemptId(attemptId: String): StoneAttemptEntity?
     @Query("SELECT * FROM stone_attempts WHERE activeSlot = 1 LIMIT 1")
     suspend fun active(): StoneAttemptEntity?
     @Query("SELECT * FROM stone_attempts WHERE activeSlot = 1 LIMIT 1")

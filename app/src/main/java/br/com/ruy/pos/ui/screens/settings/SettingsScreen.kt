@@ -14,12 +14,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import br.com.ruy.pos.ui.components.RuyHeader
 
-@Composable fun SettingsScreen(onBack: () -> Unit, onSupport: () -> Unit, onPix: () -> Unit = {}) {
+@Composable fun SettingsScreen(onBack: () -> Unit, onSupport: () -> Unit, onPix: () -> Unit = {}, onVouchers: () -> Unit = {}) {
     val context = LocalContext.current
     val keyguard = context.getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
     var action by remember { mutableStateOf("") }
     val unlock = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-        if (it.resultCode == Activity.RESULT_OK) { if (action == "pix") onPix() else if (action == "support") onSupport() }
+        if (it.resultCode == Activity.RESULT_OK) { if (action == "pix") onPix() else if (action == "support") onSupport() else if (action == "vouchers") onVouchers() }
         action = ""
     }
     Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -29,6 +29,10 @@ import br.com.ruy.pos.ui.components.RuyHeader
             action = "pix"
             keyguard.createConfirmDeviceCredentialIntent("Conta Pix", "Confirme o bloqueio do aparelho para alterar o recebimento")?.let(unlock::launch)
         }) { Text("Conta de recebimento Pix") }
+        OutlinedButton(enabled = keyguard.isDeviceSecure, onClick = {
+            action = "vouchers"
+            keyguard.createConfirmDeviceCredentialIntent("Voucher e benefícios", "Confirme o bloqueio do aparelho para alterar modalidades")?.let(unlock::launch)
+        }) { Text("Voucher e benefícios") }
         OutlinedButton(enabled = keyguard.isDeviceSecure, onClick = {
             action = "support"
             keyguard.createConfirmDeviceCredentialIntent("Suporte Ruy POS", "Confirme o bloqueio do aparelho para acessar o diagnóstico")?.let(unlock::launch)

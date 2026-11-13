@@ -16,9 +16,9 @@ import java.util.UUID
 import androidx.room.withTransaction
 import br.com.ruy.pos.payment.PaymentCoordinator
 
-class Repository internal constructor(private val db: AppDatabase) {
-    constructor(context: Context) : this(AppDatabase.get(context))
-    val payments = PaymentCoordinator(db)
+class Repository internal constructor(private val db: AppDatabase, options: () -> br.com.ruy.pos.payment.ExternalPaymentOptions = { br.com.ruy.pos.payment.ExternalPaymentOptions() }) {
+    constructor(context: Context) : this(AppDatabase.get(context), { br.com.ruy.pos.payment.PaymentCapabilitiesStore(context).load() })
+    val payments = PaymentCoordinator(db, options)
     fun observeOrders() = orderDao.observeAll()
     fun observeTables() = tableDao.observeAll()
     fun observeCashMovements(sessionId: String) = db.cashMovementDao().observe(sessionId)

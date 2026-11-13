@@ -30,31 +30,35 @@ private fun CheckLine(text: String, checked: Boolean, onCheck: (Boolean) -> Unit
 
 @Composable
 fun ExternalPaymentDialog(orderId: String, method: String, amountCents: Int, busy: Boolean,
-                           error: String?, onDismiss: () -> Unit, onConfirm: (ExternalPaymentInput) -> Unit) {
+                           error: String?, onDismiss: () -> Unit, onConfirm: (ExternalPaymentInput) -> Unit, providerInfo: String? = null) {
     var operator by remember { mutableStateOf("") }
     var evidence by remember { mutableStateOf("") }
     var reference by remember { mutableStateOf("") }
     var installments by remember { mutableStateOf("1") }
+    var checkedAmount by remember { mutableStateOf("") }
+    val operationId = rememberSaveable { java.util.UUID.randomUUID().toString() }
 
     var checked by remember { mutableStateOf(false) }
-    AlertDialog(onDismissRequest = { if (!busy) onDismiss() }, title = { Text("Pagamento externo confirmado") }, text = {
+    AlertDialog(onDismissRequest = { if (!busy) onDismiss() }, title = { Text("Conferir pagamento externo") }, text = {
         Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text("Pedido ${orderId.take(8).uppercase()} • ${Money.format(amountCents.toLong())} • ${OperationalText.method(method)}")
+            providerInfo?.let { Text(it) }
             Text("O pagamento foi efetuado em outro provedor/maquininha. Nenhum dado do cartão é coletado pelo Ruy POS.")
-            OutlinedTextField(reference, { reference = it }, label = { Text("Identificador do comprovante (opcional)") })
+            OutlinedTextField(reference, { reference = it }, label = { Text("Referência do comprovante aprovado") })
+            OutlinedTextField(checkedAmount, { checkedAmount = it }, label = { Text("Valor conferido (R$)") })
             if (method == "CREDITO") OutlinedTextField(installments, { installments = it }, label = { Text("Parcelas (1 a 99)") })
             OutlinedTextField(operator, { operator = it }, label = { Text("Operador responsável") })
             OutlinedTextField(evidence, { evidence = it }, label = { Text("Comprovante/extrato consultado (data/hora e identificador)") })
             CheckLine("Conferi no comprovante/extrato do provedor que este valor foi recebido para este pedido", checked) { checked = it }
             error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         }
-    }, confirmButton = { TextButton(enabled = !busy && checked && operator.trim().length >= 3 && evidence.trim().length >= 8,
-        onClick = { onConfirm(ExternalPaymentInput(operator.trim(), evidence.trim(), reference.ifBlank { null }, installments.toIntOrNull() ?: 1)) }) {
+    }, confirmButton = { TextButton(enabled = !busy && checked && operator.trim().length >= 3 && evidence.trim().length >= 8 && reference.trim().length >= 3,
+        onClick = { onConfirm(ExternalPaymentInput(operator.trim(), evidence.trim(), reference.trim(), if (method == "CREDITO") installments.toIntOrNull() ?: 0 else 1, Money.cents(checkedAmount) ?: -1, operationId)) }) {
         Text(if (busy) "Salvando…" else "Registrar recebimento") } },
         dismissButton = { TextButton(enabled = !busy, onClick = onDismiss) { Text("Voltar") } })
 }
 
-data class ExternalPaymentInput(val operator: String, val evidence: String, val reference: String?, val installments: Int)
+data class ExternalPaymentInput(val operator: String, val evidence: String, val reference: String, val installments: Int, val checkedAmount: Int, val operationId: String)
 
 @Composable
 fun CheckoutScreen(
@@ -90,6 +94,7 @@ fun CheckoutScreen(
     var tapInstallments by remember { mutableStateOf("1") }
     var tapTermsChecked by remember { mutableStateOf(false) }
     var stoneAccessChecked by remember { mutableStateOf(false) }
+    var vouchers by remember { mutableStateOf(emptyList<VoucherRule>()) }
     var readiness by remember { mutableStateOf(TapStoneReadiness.read(context)) }
     val lifecycle = androidx.compose.ui.platform.LocalLifecycleOwner.current.lifecycle
     DisposableEffect(lifecycle) {
@@ -104,6 +109,8 @@ fun CheckoutScreen(
     val active by remember { repo.payments.observeActive() }.collectAsState(initial = null)
 
     LaunchedEffect(Unit) {
+        try { vouchers = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { PaymentCapabilitiesStore(context).load().vouchers } }
+        catch (e: Exception) { SupportDiagnostics.record(e) }
         try { if (orderId == null) orderId = repo.prepareCheckout(totalCents, items, unitPrice, comandaId) }
         catch (e: Exception) { error = br.com.ruy.pos.ui.components.OperationalText.error(e) }
     }
@@ -144,15 +151,17 @@ fun CheckoutScreen(
             } }
         })
     if (external) ExternalPaymentDialog(orderId ?: "", method, amountCents, processing, error,
+        providerInfo = vouchers.find { it.method == method }?.let { "${it.provider} • ${it.brand}" },
         onDismiss = { external = false; error = null }, onConfirm = { input ->
             if (!processing) {
                 processing = true
                 scope.launch {
                     try {
-                        repo.payments.confirmExternal(orderId ?: "", amountCents, method, input.operator, input.evidence, input.installments, input.reference)
+                        require(input.checkedAmount == amountCents) { "Valor conferido diverge do pedido" }
+                        repo.payments.confirmExternal(orderId ?: "", amountCents, method, input.operator, input.evidence, input.installments, input.reference, input.operationId)
                         external = false
                         error = null
-                        notify("Pagamento externo registrado como PAGO_MANUALMENTE no Caixa")
+                        notify("Pagamento externo confirmado manualmente e registrado no caixa")
                     } catch (e: Exception) { error = br.com.ruy.pos.ui.components.OperationalText.error(e) }
                     finally { processing = false }
                 }
@@ -205,7 +214,7 @@ fun CheckoutScreen(
             RuyCard {
                 Text("Forma de pagamento", style = MaterialTheme.typography.titleSmall)
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    listOf("DINHEIRO" to "Dinheiro", "PIX" to "Pix QR Code", "DEBITO" to "Débito externo", "CREDITO" to "Crédito externo").forEach { (value, label) ->
+                    (listOf("DINHEIRO" to "Dinheiro", "PIX" to "Pix QR Code", "DEBITO" to "Débito externo", "CREDITO" to "Crédito externo") + vouchers.map { it.method to OperationalText.method(it.method) }).forEach { (value, label) ->
                         FilterChip(selected = method == value, enabled = !processing && active == null,
                             onClick = { method = value }, label = { Text(label) })
                     }
@@ -223,6 +232,7 @@ fun CheckoutScreen(
                     Text("Realize a cobrança no equipamento autorizado e confira a aprovação antes de registrar.", style = MaterialTheme.typography.bodySmall)
                     TextButton(enabled = !br.com.ruy.pos.BuildConfig.HOMOLOGATION && !processing && active == null, onClick = { external = true }) { Text("Pagamento externo já ocorreu (maquininha/banco)") }
                 }
+                if (vouchers.isEmpty()) Text("Voucher indisponível. Consulte Configurações > Voucher e benefícios para conferir o credenciamento.", style = MaterialTheme.typography.bodySmall)
             }
             RuyCard {
                 Text("Aproximação no celular", style = MaterialTheme.typography.titleSmall)

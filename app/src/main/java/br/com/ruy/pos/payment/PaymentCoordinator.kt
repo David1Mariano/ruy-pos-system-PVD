@@ -6,7 +6,7 @@ import java.util.UUID
 import org.json.JSONObject
 
 /** All money/table transitions share ONE Room transaction. No callback can settle money. */
-class PaymentCoordinator(private val db: AppDatabase) {
+class PaymentCoordinator(private val db: AppDatabase, private val options: () -> ExternalPaymentOptions = { ExternalPaymentOptions() }) {
     fun observeActive() = db.stoneDao().observeActive()
     fun observeAttempts(orderId: String) = db.stoneDao().observeByOrder(orderId)
     fun observePayments(orderId: String) = db.paymentDao().observe(orderId)
@@ -194,26 +194,33 @@ class PaymentCoordinator(private val db: AppDatabase) {
 
     /** Payment executed on an EXTERNAL provider/machine (other POS, bank app, Pix manual). */
     suspend fun confirmExternal(orderId: String, amountCents: Int, method: String, operator: String,
-                                evidence: String, installments: Int = 1, transactionRef: String? = null): String = db.withTransaction {
-        val normalized = requireNotNull(StoneProtocol.method(method)) { "Modalidade externa inválida" }
-        require(normalized in setOf("PIX", "DEBIT", "CREDIT"))
+                                evidence: String, installments: Int = 1, transactionRef: String? = null, operationId: String? = null): String = db.withTransaction {
+        val normalized = if (method in ExternalPaymentOptions.VOUCHER_METHODS) method else requireNotNull(StoneProtocol.method(method)) { "Modalidade externa inválida" }
+        require(normalized in setOf("PIX", "DEBIT", "CREDIT") + ExternalPaymentOptions.VOUCHER_METHODS)
+        val voucher = if (normalized in ExternalPaymentOptions.VOUCHER_METHODS) requireNotNull(options().validated().vouchers.find { it.method == normalized }) { "Voucher não habilitado para o estabelecimento" } else null
         require(installments in 1..99 && (normalized == "CREDIT" || installments == 1))
         require(operator.trim().length >= 3) { "Informe o operador responsável (3 ou mais caracteres)" }
         require(evidence.trim().length >= 8) { "Informe comprovante/extrato consultado (8 ou mais caracteres)" }
+        require(operationId == null || operationId.matches(Regex("[0-9a-f-]{36}"))) { "Confirmação inválida" }
+        val ref = transactionRef?.trim()?.takeIf { it.isNotEmpty() }
+        require(ref != null && ref.matches(Regex("[A-Za-z0-9._-]{3,128}"))) { "Informe a referência do comprovante aprovado; não informe dados de cartão" }
+        operationId?.let { id -> db.stoneDao().byAttemptId(id)?.let { a ->
+            val existing = requireNotNull(db.paymentDao().byId(a.paymentId))
+            check(a.origin == "EXTERNAL_MANUAL" && existing.orderId == orderId && existing.amountCents == amountCents && existing.method == normalized && existing.installments == installments && existing.transactionRef == ref) { "Confirmação conflitante" }
+            return@withTransaction existing.paymentId
+        } }
         requireNoFlight()
         val order = requireNotNull(db.orderDao().byId(orderId)) { "Pedido não encontrado" }
         require(amountCents in 1..remaining(order)) { "Valor excede o saldo do pedido" }
         val session = requireNotNull(db.cashSessionDao().getOpen()) { "Abra o Caixa antes de registrar recebimento" }
-        val ref = transactionRef?.trim()?.takeIf { it.isNotEmpty() }
-        require(ref == null || ref.matches(Regex("[A-Za-z0-9._-]{3,128}"))) { "Referência inválida; não informe dados de cartão" }
-        check(ref == null || db.paymentDao().getAll().none { it.status == "PAGO" && it.transactionRef == ref }) { "Comprovante já utilizado" }
+        check(db.paymentDao().getAll().none { it.status == "PAGO" && it.transactionRef == ref }) { "Comprovante já utilizado" }
         val p = PaymentEntity(UUID.randomUUID().toString(), orderId, amountCents, normalized, "PAGO_MANUALMENTE",
             null, null, installments, ref, cashSessionId = session.sessionId)
         db.paymentDao().insert(p)
         settle(p)
-        db.stoneDao().insert(StoneAttemptEntity(attemptId = UUID.randomUUID().toString(), paymentId = p.paymentId,
+        db.stoneDao().insert(StoneAttemptEntity(attemptId = operationId ?: UUID.randomUUID().toString(), paymentId = p.paymentId,
             orderId = orderId, installmentType = "NONE", origin = "EXTERNAL_MANUAL", state = "CONFIRMADO", activeSlot = null,
-            reconciledBy = operator.trim(), reconciliationEvidence = evidence.trim(), detail = "PAGO_MANUALMENTE; provedor externo"))
+            reconciledBy = operator.trim(), reconciliationEvidence = evidence.trim(), detail = if (voucher == null) "PAGO_MANUALMENTE; provedor externo" else JSONObject().put("provider", voucher.provider).put("brand", voucher.brand).toString()))
         p.paymentId
     }
 

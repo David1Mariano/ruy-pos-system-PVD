@@ -51,7 +51,7 @@ fun RuyNavHost(repo: Repository, start: String = "sales", onExit: () -> Unit, on
     val lifecycle = androidx.compose.ui.platform.LocalLifecycleOwner.current.lifecycle
     androidx.compose.runtime.DisposableEffect(lifecycle) {
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
-            if (event == androidx.lifecycle.Lifecycle.Event.ON_STOP && route in setOf("support", "pix-account")) route = "settings"
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_STOP && route in setOf("support", "pix-account", "vouchers")) route = "settings"
         }
         lifecycle.addObserver(observer)
         onDispose { lifecycle.removeObserver(observer) }
@@ -120,7 +120,8 @@ fun RuyNavHost(repo: Repository, start: String = "sales", onExit: () -> Unit, on
                 }
                 "products" -> ProductsScreen(repo = repo, onBack = { route = "sales" })
                 "categories" -> CategoriesScreen(repo = repo, onBack = { route = "sales" }, onBackup = { route = "backup" }, onReports = { route = "reports" }, onSettings = { route = "settings" })
-                "settings" -> br.com.ruy.pos.ui.screens.settings.SettingsScreen(onBack = { route = "categories" }, onSupport = { route = "support" }, onPix = { route = "pix-account" })
+                "settings" -> br.com.ruy.pos.ui.screens.settings.SettingsScreen(onBack = { route = "categories" }, onSupport = { route = "support" }, onPix = { route = "pix-account" }, onVouchers = { route = "vouchers" })
+                "vouchers" -> br.com.ruy.pos.ui.screens.settings.VoucherSettingsScreen(onBack = { route = "settings" })
                 "pix-account" -> br.com.ruy.pos.ui.screens.settings.PixAccountScreen(onBack = { route = "settings" })
                 "support" -> br.com.ruy.pos.ui.screens.settings.SupportScreen(onBack = { route = "settings" })
                 "orders" -> OrdersScreen(repo = repo, onBack = { route = "sales" }, onResumeOrder = { resumeOrder(it) })
