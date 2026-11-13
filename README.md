@@ -1,4 +1,9 @@
-# Ruy POS System — protótipo Android v0.2.0
+# Ruy POS System
+
+Estado Android/NFC 0.9.3: consulte o [roteiro de homologação](docs/ANDROID-NFC-RUNBOOK.md) e as [evidências e limitações](docs/ANDROID-NFC-EVIDENCE.md). O APK de homologação usa package e dados separados; pagamentos reais continuam sujeitos à validação autorizada.
+
+As seções históricas abaixo descrevem o protótipo 0.2.0, não todas as funções atuais.
+
 
 Evolução da versão 0.1: fila local de pedidos com UUID, status PENDING/SYNCED, tela de configuração HTTPS e sincronização manual por API com Idempotency-Key. Preserva o catálogo e carrinho locais.
 

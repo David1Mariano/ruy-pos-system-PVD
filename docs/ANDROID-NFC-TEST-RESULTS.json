@@ -1,0 +1,154 @@
+[
+    {
+        "Variant":  "Debug",
+        "Suite":  "br.com.ruy.pos.backup.BackupManagerSimulatedTest",
+        "Tests":  7,
+        "Failures":  0,
+        "Errors":  0,
+        "Skipped":  0
+    },
+    {
+        "Variant":  "Debug",
+        "Suite":  "br.com.ruy.pos.payment.PaymentCoordinatorSimulatedTest",
+        "Tests":  27,
+        "Failures":  0,
+        "Errors":  0,
+        "Skipped":  0
+    },
+    {
+        "Variant":  "Debug",
+        "Suite":  "br.com.ruy.pos.payment.StoneActivityReturnSimulatedTest",
+        "Tests":  1,
+        "Failures":  0,
+        "Errors":  0,
+        "Skipped":  0
+    },
+    {
+        "Variant":  "Debug",
+        "Suite":  "br.com.ruy.pos.payment.StoneGatewaySimulatedTest",
+        "Tests":  11,
+        "Failures":  0,
+        "Errors":  0,
+        "Skipped":  0
+    },
+    {
+        "Variant":  "Debug",
+        "Suite":  "br.com.ruy.pos.payment.StoneMigrationSimulatedTest",
+        "Tests":  1,
+        "Failures":  0,
+        "Errors":  0,
+        "Skipped":  0
+    },
+    {
+        "Variant":  "Debug",
+        "Suite":  "br.com.ruy.pos.payment.StoneProtocolSimulatedTest",
+        "Tests":  18,
+        "Failures":  0,
+        "Errors":  0,
+        "Skipped":  0
+    },
+    {
+        "Variant":  "Debug",
+        "Suite":  "br.com.ruy.pos.payment.TapStoneExternalSimulatedTest",
+        "Tests":  10,
+        "Failures":  0,
+        "Errors":  0,
+        "Skipped":  0
+    },
+    {
+        "Variant":  "Debug",
+        "Suite":  "br.com.ruy.pos.report.ReportCalculatorSimulatedTest",
+        "Tests":  1,
+        "Failures":  0,
+        "Errors":  0,
+        "Skipped":  0
+    },
+    {
+        "Variant":  "Debug",
+        "Suite":  "br.com.ruy.pos.report.ShareFilesSimulatedTest",
+        "Tests":  2,
+        "Failures":  0,
+        "Errors":  0,
+        "Skipped":  2
+    },
+    {
+        "Variant":  "Homologation",
+        "Suite":  "br.com.ruy.pos.backup.BackupManagerSimulatedTest",
+        "Tests":  7,
+        "Failures":  0,
+        "Errors":  0,
+        "Skipped":  0
+    },
+    {
+        "Variant":  "Homologation",
+        "Suite":  "br.com.ruy.pos.HomologationIsolationTest",
+        "Tests":  1,
+        "Failures":  0,
+        "Errors":  0,
+        "Skipped":  0
+    },
+    {
+        "Variant":  "Homologation",
+        "Suite":  "br.com.ruy.pos.payment.PaymentCoordinatorSimulatedTest",
+        "Tests":  27,
+        "Failures":  0,
+        "Errors":  0,
+        "Skipped":  0
+    },
+    {
+        "Variant":  "Homologation",
+        "Suite":  "br.com.ruy.pos.payment.StoneActivityReturnSimulatedTest",
+        "Tests":  1,
+        "Failures":  0,
+        "Errors":  0,
+        "Skipped":  0
+    },
+    {
+        "Variant":  "Homologation",
+        "Suite":  "br.com.ruy.pos.payment.StoneGatewaySimulatedTest",
+        "Tests":  11,
+        "Failures":  0,
+        "Errors":  0,
+        "Skipped":  0
+    },
+    {
+        "Variant":  "Homologation",
+        "Suite":  "br.com.ruy.pos.payment.StoneMigrationSimulatedTest",
+        "Tests":  1,
+        "Failures":  0,
+        "Errors":  0,
+        "Skipped":  0
+    },
+    {
+        "Variant":  "Homologation",
+        "Suite":  "br.com.ruy.pos.payment.StoneProtocolSimulatedTest",
+        "Tests":  18,
+        "Failures":  0,
+        "Errors":  0,
+        "Skipped":  0
+    },
+    {
+        "Variant":  "Homologation",
+        "Suite":  "br.com.ruy.pos.payment.TapStoneExternalSimulatedTest",
+        "Tests":  10,
+        "Failures":  0,
+        "Errors":  0,
+        "Skipped":  0
+    },
+    {
+        "Variant":  "Homologation",
+        "Suite":  "br.com.ruy.pos.report.ReportCalculatorSimulatedTest",
+        "Tests":  1,
+        "Failures":  0,
+        "Errors":  0,
+        "Skipped":  0
+    },
+    {
+        "Variant":  "Homologation",
+        "Suite":  "br.com.ruy.pos.report.ShareFilesSimulatedTest",
+        "Tests":  2,
+        "Failures":  0,
+        "Errors":  0,
+        "Skipped":  2
+    }
+]
