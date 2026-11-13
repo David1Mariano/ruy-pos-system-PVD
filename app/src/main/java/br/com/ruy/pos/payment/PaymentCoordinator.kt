@@ -368,10 +368,12 @@ class PaymentCoordinator(private val db: AppDatabase, private val options: () ->
         val expected = checkedCents(session.openingBalanceCents.toLong() + cash + total("SUPRIMENTO") - total("SANGRIA"))
         val closing = CashClosingEntity(UUID.randomUUID().toString(), sessionId, System.currentTimeMillis(), expected,
             countedCents, checkedCents(countedCents.toLong() - expected), sales, cash,
-            checkedCents(total("VENDA_PIX").toLong() + total("VENDA_INSTANT_PAYMENT")),
+            checkedCents(total("VENDA_PIX").toLong() + total("VENDA_INSTANT_PAYMENT") + total("VENDA_PIX_STATIC") + total("VENDA_PIX_API")),
             checkedCents(total("VENDA_DEBIT").toLong() + total("VENDA_TAPSTONE_DEBIT")),
             checkedCents(total("VENDA_CREDIT").toLong() + total("VENDA_TAPSTONE_CREDIT")), total("SANGRIA"), total("SUPRIMENTO"), session.operator,
-            if (br.com.ruy.pos.BuildConfig.HOMOLOGATION) "HOMOLOGAÇÃO: dados e recebimentos fictícios" else null)
+            JSONObject().put("environment", if (br.com.ruy.pos.BuildConfig.HOMOLOGATION) "HOMOLOGATION" else "COMMERCIAL")
+                .put("receivedByMode", JSONObject(br.com.ruy.pos.report.PaymentBreakdowns.calculate(db.paymentDao().getAll().filter { it.cashSessionId == sessionId }).received))
+                .put("pendingCents", 0).toString())
         db.cashClosingDao().insert(closing)
         db.cashSessionDao().close(sessionId, closing.closedAt)
         closing

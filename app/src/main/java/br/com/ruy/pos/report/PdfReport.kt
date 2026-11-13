@@ -61,14 +61,24 @@ object PdfReport {
         line("Diferença: ${reais(closing.differenceCents.toLong())}", body)
         y += 6f
         line("Total vendas: ${reais(closing.totalSalesCents.toLong())}", body)
-        line("Dinheiro: ${reais(closing.totalCashCents.toLong())} • Pix: ${reais(closing.totalPixCents.toLong())} • Débito: ${reais(closing.totalDebitCents.toLong())} • Crédito: ${reais(closing.totalCreditCents.toLong())}", body)
+        val breakdown = PaymentBreakdowns.calculate(payments.filter { it.cashSessionId == closing.sessionId })
+        if (breakdown.receivedCents == closing.totalSalesCents.toLong()) PaymentBreakdowns.labels.forEach { (mode, label) ->
+            if (mode != "SIMULATED" || br.com.ruy.pos.BuildConfig.HOMOLOGATION) line("$label: ${reais(breakdown.received[mode] ?: 0L)}", body)
+        } else {
+            line("Detalhamento por origem indisponível neste fechamento histórico.", body)
+            line("Dinheiro: ${reais(closing.totalCashCents.toLong())} • Pix: ${reais(closing.totalPixCents.toLong())}", body)
+            line("Débito: ${reais(closing.totalDebitCents.toLong())} • Crédito: ${reais(closing.totalCreditCents.toLong())}", body)
+        }
+        line("Pendentes: ${reais(breakdown.pendingCents)} • Cancelados/sem recebimento: ${reais(breakdown.cancelledCents)}", body)
+        line("Estornos/devoluções registrados: ${reais(breakdown.refundedCents)}", body)
+        line("Valores brutos. Taxas e estornos são tratados no provedor; não calculados ou executados neste relatório.", small)
         line("Sangrias: ${reais(closing.sangriasCents.toLong())} • Suprimentos: ${reais(closing.suppliesCents.toLong())}", body)
         y += 6f
         line("Movimentações:", title)
-        movements.forEach { line("  ${it.type}: ${reais(it.amountCents.toLong())} • ${it.reason ?: ""}", body) }
+        movements.filter { it.sessionId == closing.sessionId }.forEach { line("  ${br.com.ruy.pos.ui.components.OperationalText.movement(it.type)}: ${reais(it.amountCents.toLong())} • ${it.reason ?: ""}", body) }
         y += 6f
         line("Pagamentos:", title)
-        payments.forEach { line("  ${it.method} ${reais(it.amountCents.toLong())} • ${it.status}", body) }
+        payments.filter { it.cashSessionId == closing.sessionId }.forEach { line("  ${br.com.ruy.pos.ui.components.OperationalText.method(it.method)} ${reais(it.amountCents.toLong())} • ${br.com.ruy.pos.ui.components.OperationalText.status(it.status)} • ${it.installments} parcela(s)", body) }
         y += 6f
         line("Gerado pelo Ruy POS System • ${sdf.format(Date())}", small)
         doc.finishPage(page)

@@ -4,6 +4,8 @@ import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -58,9 +60,9 @@ fun ReportsScreen(repo: Repository, onBack: () -> Unit) {
 
     Column(modifier = Modifier.fillMaxSize().background(RuyBackground)) {
         RuyHeader(title = "Relatórios", subtitle = "Vendas e fechamentos")
-        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+        Column(modifier = Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 12.dp)) {
             RuyCard {
-                Text("Resumo do dia", style = MaterialTheme.typography.titleSmall)
+                Text("Resumo dos registros locais", style = MaterialTheme.typography.titleSmall)
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Text("Total vendas", style = MaterialTheme.typography.bodyMedium); Text(reaisL(report.totalSalesCents), style = MaterialTheme.typography.bodyMedium, color = RuyRed, fontWeight = FontWeight.SemiBold) }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Text("Pedidos", style = MaterialTheme.typography.bodyMedium); Text(report.totalOrders.toString(), style = MaterialTheme.typography.bodyMedium) }
@@ -72,14 +74,14 @@ fun ReportsScreen(repo: Repository, onBack: () -> Unit) {
             RuyCard {
                 Text("Por forma de pagamento", style = MaterialTheme.typography.titleSmall)
                 Spacer(modifier = Modifier.height(8.dp))
-                report.byMethod.forEach { (method, total) -> Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Text(method, style = MaterialTheme.typography.bodyMedium); Text(reaisL(total), style = MaterialTheme.typography.bodyMedium) } }
+                report.byMethod.forEach { (method, total) -> Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Text(br.com.ruy.pos.ui.components.OperationalText.method(method), style = MaterialTheme.typography.bodyMedium); Text(reaisL(total), style = MaterialTheme.typography.bodyMedium) } }
             }
             Spacer(modifier = Modifier.height(10.dp))
             RuyCard {
                 Text("Fechamentos", style = MaterialTheme.typography.titleSmall)
                 Spacer(modifier = Modifier.height(8.dp))
                 if (closings.isEmpty()) Text("Nenhum fechamento", style = MaterialTheme.typography.bodySmall, color = RuyTextSecondary)
-                else LazyColumn(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                else LazyColumn(modifier = Modifier.heightIn(max = 240.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     items(closings) { c ->
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text("${sdf.format(Date(c.closedAt))} • ${c.operator}", style = MaterialTheme.typography.bodySmall)
@@ -89,13 +91,15 @@ fun ReportsScreen(repo: Repository, onBack: () -> Unit) {
                 }
             }
             Spacer(modifier = Modifier.height(10.dp))
-            RuyPrimaryButton(text = "Exportar relatório PDF", onClick = {
+            val paymentBreakdown = br.com.ruy.pos.report.PaymentBreakdowns.calculate(payments)
+            Text("Aguardando conferência: ${reaisL(paymentBreakdown.pendingCents)} • Cancelados/sem recebimento: ${reaisL(paymentBreakdown.cancelledCents)}", style = MaterialTheme.typography.bodySmall)
+            Text("Valores brutos. Consulte taxas e estornos diretamente no provedor.", style = MaterialTheme.typography.bodySmall)
+            RuyPrimaryButton(text = "Exportar último fechamento em PDF", enabled = closings.isNotEmpty(), onClick = {
                 scope.launch {
                     try {
-                        val session = repo.getOpenCashSession()
-                        val mv = session?.let { repo.getCashMovements(it.sessionId) } ?: movements
-                        val pay = payments
                         val c = closings.firstOrNull() ?: return@launch
+                        val mv = repo.getCashMovements(c.sessionId)
+                        val pay = payments.filter { it.cashSessionId == c.sessionId }
                         val f = PdfReport.generateCashClosing(context, c, mv, pay, c.operator)
                         val share = br.com.ruy.pos.report.ShareFiles.intent(context, f, "application/pdf")
                         context.startActivity(Intent.createChooser(share, "Compartilhar relatório"))

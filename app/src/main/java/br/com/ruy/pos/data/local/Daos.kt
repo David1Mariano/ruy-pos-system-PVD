@@ -63,6 +63,8 @@ interface CashClosingDao {
 
 @Dao
 interface PaymentDao {
+    @Query("SELECT * FROM payments ORDER BY createdAt DESC")
+    fun observeAll(): kotlinx.coroutines.flow.Flow<List<PaymentEntity>>
     @Insert
     suspend fun insert(payment: PaymentEntity)
     @Query("SELECT * FROM payments WHERE orderId = :orderId ORDER BY createdAt DESC")

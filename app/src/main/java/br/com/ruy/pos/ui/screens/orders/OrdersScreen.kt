@@ -22,6 +22,9 @@ import br.com.ruy.pos.ui.theme.RuyTextPrimary
 import br.com.ruy.pos.ui.theme.RuyTextSecondary
 import kotlinx.coroutines.launch
 import org.json.JSONArray
+import org.json.JSONObject
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -65,13 +68,26 @@ fun OrdersScreen(repo: Repository, onBack: () -> Unit, onResumeOrder: (OrderEnti
             }
         } else {
             val o = orders.firstOrNull { it.id == selected!!.id } ?: selected!!
-            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+            val payments by remember(o.id) { repo.payments.observePayments(o.id) }.collectAsState(initial = emptyList())
+            val audits by remember(o.id) { repo.payments.observeAttempts(o.id) }.collectAsState(initial = emptyList())
+            Column(modifier = Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 12.dp)) {
                 RuyCard {
                     Text("Pedido ${o.id.take(8).uppercase()}", style = MaterialTheme.typography.titleSmall)
                     Text(sdf.format(Date(o.createdAt)), style = MaterialTheme.typography.bodySmall, color = RuyTextSecondary)
                     Spacer(modifier = Modifier.height(6.dp))
                     Text("Total: ${reais(o.totalCents)}", style = MaterialTheme.typography.titleSmall)
                     Text("Pagamento: ${br.com.ruy.pos.ui.components.OperationalText.status(o.paymentStatus)} • ${br.com.ruy.pos.ui.components.OperationalText.connection(o.syncStatus)}", style = MaterialTheme.typography.bodySmall, color = RuyTextSecondary)
+                    payments.forEach { payment ->
+                        val audit = audits.find { it.paymentId == payment.paymentId }
+                        Text("${br.com.ruy.pos.ui.components.OperationalText.method(payment.method)} • ${reais(payment.amountCents)} • ${br.com.ruy.pos.ui.components.OperationalText.status(payment.status)}", style = MaterialTheme.typography.bodySmall)
+                        if (audit?.reconciledBy != null) Text("Conferido manualmente por ${audit.reconciledBy} • ${sdf.format(Date(audit.updatedAt))}", style = MaterialTheme.typography.bodySmall)
+                        payment.transactionRef?.let { Text("Comprovante: $it", style = MaterialTheme.typography.bodySmall) }
+                        if (payment.installments > 1) Text("${payment.installments} parcelas • total ${reais(payment.amountCents)}", style = MaterialTheme.typography.bodySmall)
+                        if (payment.method.startsWith("VOUCHER")) {
+                            val provider = runCatching { JSONObject(audit?.detail.orEmpty()) }.getOrNull()
+                            provider?.let { Text("${it.optString("provider")} • ${it.optString("brand")}", style = MaterialTheme.typography.bodySmall) }
+                        }
+                    }
                     Spacer(modifier = Modifier.height(10.dp))
                     Text("Itens", style = MaterialTheme.typography.titleSmall)
                     val itemsArr = try { JSONArray(o.itemsJson) } catch (e: Throwable) { null }

@@ -66,4 +66,22 @@ class VoucherPaymentSimulatedTest {
         store.save(rule, "Fictício", true); assertEquals(rule, store.load())
         store.save(ExternalPaymentOptions(), "Fictício", true); assertTrue(store.load().vouchers.isEmpty())
     }
+    @Test fun mixedReceiptClosingSeparatesModesWithoutChangingPhysicalCash() = runBlocking {
+        options = ExternalPaymentOptions(listOf(VoucherRule("VOUCHER_MEAL", "Provedor fictício", "Bandeira fictícia")))
+        repo.payments.confirmExternal(order, 400, "VOUCHER_MEAL", "Fictício", "FICTICIO extrato", transactionRef = "VCH-001")
+        repo.payments.confirmExternal(order, 300, "DEBIT", "Fictício", "FICTICIO extrato", transactionRef = "EXT-D01")
+        repo.payments.confirmExternal(order, 500, "CREDIT", "Fictício", "FICTICIO extrato", 3, "EXT-C01")
+        val account = br.com.ruy.pos.payment.pix.PixAccount("Banco fictício", "Loja fictícia", "", "demo@example.invalid", br.com.ruy.pos.payment.pix.PixKeyType.EMAIL, "Teste", "São Paulo", true)
+        val quote = br.com.ruy.pos.payment.pix.StaticPixGenerator().generate(br.com.ruy.pos.payment.pix.PixCodeRequest(account, 600, "FICTICIO"))
+        val pix = repo.payments.beginPix(order, quote, UUID.randomUUID().toString())
+        repo.payments.confirmPix(PaymentCoordinator.ManualReceiptProof(pix.stoneOrderId, order, 600, true, "Fictício", "FICTICIO extrato", "PIX-001", true))
+        val tap = repo.payments.beginTapStone(order, 500, "TAPSTONE_DEBIT")
+        repo.payments.confirmTapStone(PaymentCoordinator.TapStoneProof(tap.stoneOrderId, order, 500, "TAPSTONE_DEBIT", true, "Fictício", "FICTICIO extrato", "TAP-001", true))
+        val closing = repo.payments.closeCash(repo.getOpenCashSession()!!.sessionId, 10000)
+        assertEquals(2300, closing.totalSalesCents); assertEquals(600, closing.totalPixCents)
+        assertEquals(0, closing.totalCashCents); assertEquals(10000, closing.expectedCashCents)
+        val modes = org.json.JSONObject(closing.note!!).getJSONObject("receivedByMode")
+        assertEquals(400, modes.getInt("VOUCHER_EXTERNAL")); assertEquals(500, modes.getInt("TAPSTONE"))
+        assertEquals(300, modes.getInt("DEBIT_EXTERNAL")); assertEquals(500, modes.getInt("CREDIT_EXTERNAL"))
+    }
 }

@@ -20,6 +20,7 @@ class Repository internal constructor(private val db: AppDatabase, options: () -
     constructor(context: Context) : this(AppDatabase.get(context), { br.com.ruy.pos.payment.PaymentCapabilitiesStore(context).load() })
     val payments = PaymentCoordinator(db, options)
     fun observeOrders() = orderDao.observeAll()
+    fun observePayments() = paymentDao.observeAll()
     fun observeTables() = tableDao.observeAll()
     fun observeCashMovements(sessionId: String) = db.cashMovementDao().observe(sessionId)
     suspend fun getOrder(id: String) = orderDao.byId(id)

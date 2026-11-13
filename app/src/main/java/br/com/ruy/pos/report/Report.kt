@@ -25,9 +25,10 @@ object ReportCalculator {
         val paid = payments.filter { it.status == "PAGO" || it.status == "PAGO_MANUALMENTE" }
         val totalSales = paid.sumOf { it.amountCents.toLong() }
         val totalOrders = orders.size
-        val ticketMedio = if (paid.isNotEmpty()) totalSales / paid.size else 0L
+        val receivedOrderCount = paid.map { it.orderId }.distinct().size
+        val ticketMedio = if (receivedOrderCount > 0) totalSales / receivedOrderCount else 0L
         val byMethod = paid.groupBy { it.method }.mapValues { it.value.sumOf { p -> p.amountCents.toLong() } }
-        val pending = orders.count { it.paymentStatus == "PENDENTE" || it.paymentStatus == "NAO_PAGO" }
+        val pending = orders.count { it.paymentStatus in setOf("PENDENTE", "NAO_PAGO", "PARCIAL") }
         val cancelled = orders.count { it.paymentStatus == "CANCELADO" }
         val top = paid.groupBy { it.method }.entries.sortedByDescending { it.value.sumOf { p -> p.amountCents.toLong() } }
             .map { ReportRow(it.key, it.value.size, it.value.sumOf { p -> p.amountCents.toLong() }) }

@@ -5,6 +5,8 @@ import android.widget.Toast
 import br.com.ruy.pos.report.PdfReport
 import java.io.File
 import androidx.compose.foundation.background
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -43,6 +45,19 @@ fun CashRegisterScreen(repo: Repository, onBack: () -> Unit) {
     var supply by remember { mutableStateOf("") }
     var counted by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
+    val payments by remember { repo.observePayments() }.collectAsState(initial = emptyList())
+    val breakdown = br.com.ruy.pos.report.PaymentBreakdowns.calculate(payments.filter { it.cashSessionId == openSession?.sessionId && openSession != null })
+    fun registerMovement(type: String, text: String, onSaved: () -> Unit) {
+        if (busy) return
+        busy = true
+        scope.launch {
+            try {
+                repo.addCashMovement(requireNotNull(openSession).sessionId, type, requireNotNull(br.com.ruy.pos.ui.components.Money.cents(text)) { "Valor inválido" }, if (type == "SANGRIA") "Sangria" else "Suprimento")
+                onSaved()
+            } catch (e: Exception) { Toast.makeText(context, br.com.ruy.pos.ui.components.OperationalText.error(e), Toast.LENGTH_LONG).show() }
+            finally { busy = false }
+        }
+    }
 
     LaunchedEffect(Unit) {
         openSession = repo.getOpenCashSession()
@@ -55,7 +70,7 @@ fun CashRegisterScreen(repo: Repository, onBack: () -> Unit) {
 
     Column(modifier = Modifier.fillMaxSize().background(RuyBackground)) {
         RuyHeader(title = "Caixa", subtitle = "Abertura, movimentações e fechamento")
-        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+        Column(modifier = Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 12.dp)) {
             if (openSession == null) {
                 RuyCard {
                     Text("Abrir caixa", style = MaterialTheme.typography.titleSmall)
@@ -84,6 +99,11 @@ fun CashRegisterScreen(repo: Repository, onBack: () -> Unit) {
                     Text("Operador: ${openSession!!.operator}", style = MaterialTheme.typography.bodySmall, color = RuyTextSecondary)
                     Text("Abertura: ${sdf.format(Date(openSession!!.openedAt))}", style = MaterialTheme.typography.bodySmall, color = RuyTextSecondary)
                     Text("Saldo inicial: ${reais(openSession!!.openingBalanceCents)}", style = MaterialTheme.typography.bodySmall)
+                    br.com.ruy.pos.report.PaymentBreakdowns.labels.forEach { (key, label) ->
+                        if (key != "SIMULATED" || br.com.ruy.pos.BuildConfig.HOMOLOGATION) Text("$label: ${br.com.ruy.pos.ui.components.Money.format(breakdown.received[key] ?: 0L)}", style = MaterialTheme.typography.bodySmall)
+                    }
+                    Text("Aguardando conferência: ${br.com.ruy.pos.ui.components.Money.format(breakdown.pendingCents)}", style = MaterialTheme.typography.bodySmall)
+                    Text("Cancelados/sem recebimento: ${br.com.ruy.pos.ui.components.Money.format(breakdown.cancelledCents)}", style = MaterialTheme.typography.bodySmall)
                 }
                 Spacer(modifier = Modifier.height(10.dp))
                 RuyCard {
@@ -91,23 +111,15 @@ fun CashRegisterScreen(repo: Repository, onBack: () -> Unit) {
                     Spacer(modifier = Modifier.height(6.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedTextField(value = sangria, onValueChange = { sangria = it }, label = { Text("Sangria (R$)") }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp))
-                        Button(onClick = {
-                            scope.launch {
-                                repo.addCashMovement(openSession!!.sessionId, "SANGRIA", br.com.ruy.pos.ui.components.Money.cents(sangria) ?: 0, "Sangria")
-                                sangria = ""
-                                movements = repo.getCashMovements(openSession!!.sessionId)
-                            }
+                        Button(enabled = !busy, onClick = {
+                            registerMovement("SANGRIA", sangria) { sangria = "" }
                         }, shape = RoundedCornerShape(10.dp)) { Text("Registrar") }
                     }
                     Spacer(modifier = Modifier.height(6.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedTextField(value = supply, onValueChange = { supply = it }, label = { Text("Suprimento (R$)") }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp))
-                        Button(onClick = {
-                            scope.launch {
-                                repo.addCashMovement(openSession!!.sessionId, "SUPRIMENTO", br.com.ruy.pos.ui.components.Money.cents(supply) ?: 0, "Suprimento")
-                                supply = ""
-                                movements = repo.getCashMovements(openSession!!.sessionId)
-                            }
+                        Button(enabled = !busy, onClick = {
+                            registerMovement("SUPRIMENTO", supply) { supply = "" }
                         }, shape = RoundedCornerShape(10.dp)) { Text("Registrar") }
                     }
                     Spacer(modifier = Modifier.height(6.dp))
@@ -140,7 +152,7 @@ fun CashRegisterScreen(repo: Repository, onBack: () -> Unit) {
             }
 Spacer(modifier = Modifier.height(10.dp))
                 Text("Histórico de fechamentos", style = MaterialTheme.typography.titleSmall)
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                LazyColumn(modifier = Modifier.heightIn(max = 320.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     items(closings) { c ->
                         RuyCard {
                             Column(modifier = Modifier.fillMaxWidth()) {
