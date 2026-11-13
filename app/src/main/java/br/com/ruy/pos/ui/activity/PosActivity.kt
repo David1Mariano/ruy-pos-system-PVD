@@ -1,4 +1,4 @@
-﻿package br.com.ruy.pos.ui.activity
+package br.com.ruy.pos.ui.activity
 
 import android.content.Intent
 import android.os.Bundle

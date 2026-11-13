@@ -1,4 +1,4 @@
-﻿package br.com.ruy.pos.ui.components
+package br.com.ruy.pos.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*

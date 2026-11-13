@@ -1,4 +1,4 @@
-﻿package br.com.ruy.pos.ui.screens.sales
+package br.com.ruy.pos.ui.screens.sales
 
 import android.graphics.BitmapFactory
 import android.widget.Toast
@@ -144,7 +144,7 @@ fun SalesScreen(repo: Repository, onBack: () -> Unit, onOrderRegistered: (String
                                     Toast.makeText(context, "Pedido $id registrado", Toast.LENGTH_SHORT).show()
                                     onOrderRegistered(id)
                                 } catch (e: Exception) {
-                                    Toast.makeText(context, "Erro: ${e.message}", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, br.com.ruy.pos.ui.components.OperationalText.error(e), Toast.LENGTH_SHORT).show()
                                 } finally {
                                     registering = false
                                 }

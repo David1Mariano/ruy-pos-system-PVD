@@ -100,15 +100,15 @@ fun CheckoutScreen(
 
     LaunchedEffect(Unit) {
         try { if (orderId == null) orderId = repo.prepareCheckout(totalCents, items, unitPrice, comandaId) }
-        catch (e: Exception) { error = e.message ?: "Não foi possível salvar o pedido" }
+        catch (e: Exception) { error = br.com.ruy.pos.ui.components.OperationalText.error(e) }
     }
     val order by remember(orderId) { repo.payments.observeOrder(orderId.orEmpty()) }.collectAsState(initial = null)
     val payments by remember(orderId) { repo.payments.observePayments(orderId.orEmpty()) }.collectAsState(initial = emptyList())
     val attempts by remember(orderId) { repo.payments.observeAttempts(orderId.orEmpty()) }.collectAsState(initial = emptyList())
     val paid = payments.filter { it.status == "PAGO" }.sumOf { it.amountCents }
     val remaining = ((order?.totalCents ?: totalCents) - paid).coerceAtLeast(0)
-    val amountCents = amount.toIntOrNull() ?: 0
-    val receivedCents = received.toIntOrNull() ?: 0
+    val amountCents = Money.cents(amount) ?: 0
+    val receivedCents = Money.cents(received) ?: 0
     val change = if (method == "DINHEIRO" && receivedCents >= amountCents) receivedCents - amountCents else 0
     val attempt = attempts.firstOrNull { it.activeSlot == 1 }
     val payment = payments.firstOrNull { it.paymentId == attempt?.paymentId }
@@ -119,7 +119,7 @@ fun CheckoutScreen(
             (0 until arr.length()).map { arr.getJSONObject(it) }.map { Triple(it.getString("name"), it.getInt("qty"), it.getInt("unitCents")) }
         } ?: items.map { (name, qty) -> Triple(name, qty, unitPrice[name] ?: 0) }
     }
-    LaunchedEffect(remaining) { amount = remaining.toString() }
+    LaunchedEffect(remaining) { amount = Money.input(remaining) }
     LaunchedEffect(order?.paymentStatus, active) {
         if (order?.paymentStatus == "PAGO" && active == null) onPaidAndClosed()
     }
@@ -134,7 +134,7 @@ fun CheckoutScreen(
                         external = false
                         error = null
                         notify("Pagamento externo registrado como PAGO_MANUALMENTE no Caixa")
-                    } catch (e: Exception) { error = e.message ?: "Falha no registro externo" }
+                    } catch (e: Exception) { error = br.com.ruy.pos.ui.components.OperationalText.error(e) }
                     finally { processing = false }
                 }
             }
@@ -146,7 +146,7 @@ fun CheckoutScreen(
                 processing = true
                 scope.launch {
                     try { repo.payments.confirmTapStone(proof); tapProof = false; error = null }
-                    catch (e: Exception) { error = e.message }
+                    catch (e: Exception) { error = br.com.ruy.pos.ui.components.OperationalText.error(e) }
                     finally { processing = false }
                 }
             }
@@ -161,7 +161,7 @@ fun CheckoutScreen(
                         reconciliation = false
                         error = null
                         notify(if (input.received) "Recebimento conciliado e registrado no Caixa" else "Ausência de recebimento conferida; tentativa encerrada")
-                    } catch (e: Exception) { error = e.message ?: "Falha na conciliação" }
+                    } catch (e: Exception) { error = br.com.ruy.pos.ui.components.OperationalText.error(e) }
                     finally { processing = false }
                 }
             }
@@ -192,10 +192,10 @@ fun CheckoutScreen(
                     }
                 }
                 OutlinedTextField(amount, { amount = it }, enabled = !processing && active == null,
-                    label = { Text("Valor desta cobrança (centavos)") }, modifier = Modifier.fillMaxWidth())
+                    label = { Text("Valor desta cobrança (R$)") }, modifier = Modifier.fillMaxWidth())
                 if (method == "DINHEIRO") {
                     OutlinedTextField(received, { received = it }, enabled = !processing && active == null,
-                        label = { Text("Valor recebido (centavos)") }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp))
+                        label = { Text("Valor recebido (R$)") }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp))
                     Text("Troco: ${reais(change)}")
                 }
                 if (method == "CREDITO") {
@@ -228,7 +228,7 @@ fun CheckoutScreen(
                         processing = true
                         scope.launch {
                             try { repo.payments.confirmSimulated(requireNotNull(orderId), amountCents) }
-                            catch (e: Exception) { error = e.message }
+                            catch (e: Exception) { error = br.com.ruy.pos.ui.components.OperationalText.error(e) }
                             finally { processing = false }
                         }
                     }) { Text("Pagamento simulado — dados fictícios") }
@@ -248,7 +248,7 @@ fun CheckoutScreen(
                                     check(readiness.locallyReady) { "Android 10+, NFC ativo e internet necessários" }
                                     repo.payments.beginTapStone(requireNotNull(orderId), amountCents, if (tapCredit) "TAPSTONE_CREDIT" else "TAPSTONE_DEBIT")
                                     tapProof = true
-                                } catch (e: Exception) { error = e.message }
+                                } catch (e: Exception) { error = br.com.ruy.pos.ui.components.OperationalText.error(e) }
                                 finally { processing = false }
                             }
                         }) { Text("Preparar conferência Stone externa") }
@@ -266,7 +266,7 @@ fun CheckoutScreen(
                 processing = true
                 scope.launch {
                     try { repo.payments.recoverLegacyPayment(legacy.paymentId) }
-                    catch (e: Exception) { error = e.message }
+                    catch (e: Exception) { error = br.com.ruy.pos.ui.components.OperationalText.error(e) }
                     finally { processing = false }
                 }
             }) { Text("Recuperar pagamento anterior para conciliação") }
@@ -290,7 +290,7 @@ fun CheckoutScreen(
                                 return@launch
 
                             }
-                        } catch (e: Exception) { error = e.message ?: "Falha no pagamento; confira as tentativas persistidas" }
+                        } catch (e: Exception) { error = br.com.ruy.pos.ui.components.OperationalText.error(e) }
                         finally { processing = false }
                     }
                 })

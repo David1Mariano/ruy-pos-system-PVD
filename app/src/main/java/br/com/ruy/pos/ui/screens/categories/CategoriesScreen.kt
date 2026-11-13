@@ -1,4 +1,4 @@
-﻿package br.com.ruy.pos.ui.screens.categories
+package br.com.ruy.pos.ui.screens.categories
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -21,7 +21,7 @@ import kotlinx.coroutines.launch
 import java.util.UUID
 
 @Composable
-fun CategoriesScreen(repo: Repository, onBack: () -> Unit, onBackup: () -> Unit = {}, onReports: () -> Unit = {}) {
+fun CategoriesScreen(repo: Repository, onBack: () -> Unit, onBackup: () -> Unit = {}, onReports: () -> Unit = {}, onSettings: () -> Unit = {}) {
     val scope = rememberCoroutineScope()
     var name by remember { mutableStateOf("") }
     var items by remember { mutableStateOf<List<CategoryEntity>>(emptyList()) }
@@ -67,6 +67,8 @@ fun CategoriesScreen(repo: Repository, onBack: () -> Unit, onBackup: () -> Unit 
                     }
                 }
             }
+            Spacer(modifier = Modifier.height(8.dp))
+            RuyPrimaryButton(text = "Configurações", onClick = onSettings)
             Spacer(modifier = Modifier.height(8.dp))
             RuyPrimaryButton(text = "Backup / Restaurar", onClick = onBackup)
             Spacer(modifier = Modifier.height(8.dp))

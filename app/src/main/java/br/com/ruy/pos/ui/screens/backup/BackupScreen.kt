@@ -61,7 +61,7 @@ fun BackupScreen(repo: Repository, onBack: () -> Unit, onRestoreClick: () -> Uni
                             val target = BackupManager.backupFile(context)
                             val ok = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { BackupManager.export(context, Uri.fromFile(target)) }
                             message = if (ok) "Backup exportado com sucesso" else "Falha na exportação"
-                        } catch (e: Exception) { message = "Erro: ${e.message}" }
+                        } catch (e: Exception) { message = br.com.ruy.pos.ui.components.OperationalText.error(e) }
                         finally { busy = false }
                     }
                 })

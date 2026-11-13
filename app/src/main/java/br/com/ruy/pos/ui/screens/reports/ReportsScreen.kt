@@ -100,7 +100,7 @@ fun ReportsScreen(repo: Repository, onBack: () -> Unit) {
                         val share = br.com.ruy.pos.report.ShareFiles.intent(context, f, "application/pdf")
                         context.startActivity(Intent.createChooser(share, "Compartilhar relatório"))
                         Toast.makeText(context, "Relatório gerado", Toast.LENGTH_SHORT).show()
-                    } catch (e: Exception) { Toast.makeText(context, e.message ?: "Falha no PDF", Toast.LENGTH_LONG).show() }
+                    } catch (e: Exception) { Toast.makeText(context, br.com.ruy.pos.ui.components.OperationalText.error(e), Toast.LENGTH_LONG).show() }
                 }
             })
             Spacer(modifier = Modifier.height(8.dp))

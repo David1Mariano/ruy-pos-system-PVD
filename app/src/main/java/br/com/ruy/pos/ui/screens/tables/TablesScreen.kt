@@ -1,4 +1,4 @@
-﻿package br.com.ruy.pos.ui.screens.tables
+package br.com.ruy.pos.ui.screens.tables
 
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -122,7 +122,7 @@ fun TablesScreen(repo: Repository, onBack: () -> Unit, onCheckoutTable: (Int, Li
                                         comandaId?.let { cid ->
                                             try { repo.addItemToComanda(cid, p.name, p.priceCents, 1, p.id) }
                                             catch (e: IllegalStateException) {
-                                                Toast.makeText(context, e.message, Toast.LENGTH_LONG).show()
+                                                Toast.makeText(context, br.com.ruy.pos.ui.components.OperationalText.error(e), Toast.LENGTH_LONG).show()
                                                 return@launch
                                             }
                                             items = repo.getComandaItems(cid)

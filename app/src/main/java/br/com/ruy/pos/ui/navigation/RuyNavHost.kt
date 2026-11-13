@@ -1,4 +1,4 @@
-﻿package br.com.ruy.pos.ui.navigation
+package br.com.ruy.pos.ui.navigation
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -48,6 +48,14 @@ import br.com.ruy.pos.ui.theme.RuyTextSecondary
 @Composable
 fun RuyNavHost(repo: Repository, start: String = "sales", onExit: () -> Unit, onRestoreClick: () -> Unit = {}) {
     var route by remember { mutableStateOf(start) }
+    val lifecycle = androidx.compose.ui.platform.LocalLifecycleOwner.current.lifecycle
+    androidx.compose.runtime.DisposableEffect(lifecycle) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_STOP && route == "support") route = "settings"
+        }
+        lifecycle.addObserver(observer)
+        onDispose { lifecycle.removeObserver(observer) }
+    }
     var checkoutData by remember { mutableStateOf<CheckoutData?>(null) }
     val scope = rememberCoroutineScope()
     val active by remember { repo.payments.observeActive() }.collectAsState(initial = null)
@@ -89,7 +97,7 @@ fun RuyNavHost(repo: Repository, start: String = "sales", onExit: () -> Unit, on
         Column(modifier = Modifier.padding(padding).fillMaxSize()) {
             if (active != null && route != "checkout") TextButton(onClick = {
                 scope.launch { active?.let { repo.getOrder(it.orderId)?.let { order -> resumeOrder(order) } } }
-            }) { Text("Pagamento pendente • retomar conciliação Stone") }
+            }) { Text("Pagamento pendente • conferir recebimento") }
             Box(Modifier.weight(1f)) {
             when (route) {
                 "sales" -> SalesScreen(repo = repo, onBack = onExit, onOrderRegistered = { route = "orders" }, onCheckout = { total, items, up ->
@@ -111,7 +119,9 @@ fun RuyNavHost(repo: Repository, start: String = "sales", onExit: () -> Unit, on
                     }
                 }
                 "products" -> ProductsScreen(repo = repo, onBack = { route = "sales" })
-                "categories" -> CategoriesScreen(repo = repo, onBack = { route = "sales" }, onBackup = { route = "backup" }, onReports = { route = "reports" })
+                "categories" -> CategoriesScreen(repo = repo, onBack = { route = "sales" }, onBackup = { route = "backup" }, onReports = { route = "reports" }, onSettings = { route = "settings" })
+                "settings" -> br.com.ruy.pos.ui.screens.settings.SettingsScreen(onBack = { route = "categories" }, onSupport = { route = "support" })
+                "support" -> br.com.ruy.pos.ui.screens.settings.SupportScreen(onBack = { route = "settings" })
                 "orders" -> OrdersScreen(repo = repo, onBack = { route = "sales" }, onResumeOrder = { resumeOrder(it) })
                 "cash" -> CashRegisterScreen(repo = repo, onBack = { route = "sales" })
                 "backup" -> BackupScreen(repo = repo, onBack = { route = "categories" }, onRestoreClick = onRestoreClick)

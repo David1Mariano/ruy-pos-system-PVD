@@ -84,7 +84,7 @@ fun ProductsScreen(repo: Repository, onBack: () -> Unit) {
     val filtered = items.filter { it.name.contains(search, ignoreCase = true) }
 
     Column(modifier = Modifier.fillMaxSize().background(RuyBackground)) {
-        RuyHeader(title = "Produtos", subtitle = "Cadastro e catálogo")
+        RuyHeader(title = "Produtos", subtitle = "Cadastro e catÃ¡logo")
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
             OutlinedTextField(value = search, onValueChange = { search = it }, modifier = Modifier.fillMaxWidth(), placeholder = { Text("Buscar produto...") }, leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) }, shape = RoundedCornerShape(12.dp))
             Spacer(modifier = Modifier.height(10.dp))
@@ -93,7 +93,7 @@ fun ProductsScreen(repo: Repository, onBack: () -> Unit) {
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Nome") }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp))
                 Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(value = price, onValueChange = { price = it }, label = { Text("Preço (centavos)") }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp))
+                OutlinedTextField(value = price, onValueChange = { price = it }, label = { Text("PreÃ§o (R$)") }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp))
                 Spacer(modifier = Modifier.height(8.dp))
                 ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
                     OutlinedTextField(value = categories.firstOrNull { it.id == categoryId }?.name ?: "", onValueChange = {}, readOnly = true, label = { Text("Categoria") }, trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) }, modifier = Modifier.menuAnchor().fillMaxWidth(), shape = RoundedCornerShape(12.dp))
@@ -115,7 +115,7 @@ fun ProductsScreen(repo: Repository, onBack: () -> Unit) {
                     RuyPrimaryButton(text = if (editing == null) "Salvar" else "Atualizar", onClick = {
                         scope.launch {
                             val id = editing?.id ?: UUID.randomUUID().toString()
-                            val pc = price.toIntOrNull() ?: 0
+                            val pc = br.com.ruy.pos.ui.components.Money.cents(price) ?: 0
                             repo.saveProductLocal(id, categoryId, name, pc, true, imagePath)
                             name = ""; price = ""; categoryId = null; editing = null; imagePath = null
                             items = repo.productLocalAll()
@@ -142,7 +142,7 @@ fun ProductsScreen(repo: Repository, onBack: () -> Unit) {
                                     RuyPriceText(reais(p.priceCents))
                                 }
                             }
-                            TextButton(onClick = { editing = p; name = p.name; price = p.priceCents.toString(); categoryId = p.categoryId; imagePath = p.imagePath }) { Text("Editar") }
+                            TextButton(onClick = { editing = p; name = p.name; price = br.com.ruy.pos.ui.components.Money.input(p.priceCents); categoryId = p.categoryId; imagePath = p.imagePath }) { Text("Editar") }
                         }
                     }
                 }

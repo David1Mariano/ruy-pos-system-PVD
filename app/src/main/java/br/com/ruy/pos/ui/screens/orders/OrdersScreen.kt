@@ -1,4 +1,4 @@
-﻿package br.com.ruy.pos.ui.screens.orders
+package br.com.ruy.pos.ui.screens.orders
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -54,7 +54,7 @@ fun OrdersScreen(repo: Repository, onBack: () -> Unit, onResumeOrder: (OrderEnti
                                     }
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Text(sdf.format(Date(o.createdAt)), style = MaterialTheme.typography.bodySmall, color = RuyTextSecondary)
-                                    Text("Pagamento: ${o.paymentStatus} • Sync: ${o.syncStatus}", style = MaterialTheme.typography.bodySmall, color = RuyTextSecondary)
+                                    Text("Pagamento: ${br.com.ruy.pos.ui.components.OperationalText.status(o.paymentStatus)} • ${br.com.ruy.pos.ui.components.OperationalText.connection(o.syncStatus)}", style = MaterialTheme.typography.bodySmall, color = RuyTextSecondary)
                                 }
                             }
                         }
@@ -71,7 +71,7 @@ fun OrdersScreen(repo: Repository, onBack: () -> Unit, onResumeOrder: (OrderEnti
                     Text(sdf.format(Date(o.createdAt)), style = MaterialTheme.typography.bodySmall, color = RuyTextSecondary)
                     Spacer(modifier = Modifier.height(6.dp))
                     Text("Total: ${reais(o.totalCents)}", style = MaterialTheme.typography.titleSmall)
-                    Text("Pagamento: ${o.paymentStatus} • Sync: ${o.syncStatus}", style = MaterialTheme.typography.bodySmall, color = RuyTextSecondary)
+                    Text("Pagamento: ${br.com.ruy.pos.ui.components.OperationalText.status(o.paymentStatus)} • ${br.com.ruy.pos.ui.components.OperationalText.connection(o.syncStatus)}", style = MaterialTheme.typography.bodySmall, color = RuyTextSecondary)
                     Spacer(modifier = Modifier.height(10.dp))
                     Text("Itens", style = MaterialTheme.typography.titleSmall)
                     val itemsArr = try { JSONArray(o.itemsJson) } catch (e: Throwable) { null }
@@ -87,7 +87,7 @@ fun OrdersScreen(repo: Repository, onBack: () -> Unit, onResumeOrder: (OrderEnti
                             }
                         }
                     } else {
-                        Text(o.itemsJson, style = MaterialTheme.typography.bodySmall)
+                        Text("Os itens deste pedido não puderam ser exibidos. Consulte o suporte.", style = MaterialTheme.typography.bodySmall)
                     }
                 }
                 Spacer(modifier = Modifier.height(10.dp))

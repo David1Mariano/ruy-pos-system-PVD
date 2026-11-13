@@ -38,7 +38,7 @@ fun CashRegisterScreen(repo: Repository, onBack: () -> Unit) {
     var movements by remember { mutableStateOf<List<CashMovementEntity>>(emptyList()) }
     var closings by remember { mutableStateOf<List<CashClosingEntity>>(emptyList()) }
     var operator by remember { mutableStateOf("Operador") }
-    var opening by remember { mutableStateOf("10000") }
+    var opening by remember { mutableStateOf("100,00") }
     var sangria by remember { mutableStateOf("") }
     var supply by remember { mutableStateOf("") }
     var counted by remember { mutableStateOf("") }
@@ -62,18 +62,18 @@ fun CashRegisterScreen(repo: Repository, onBack: () -> Unit) {
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(value = operator, onValueChange = { operator = it }, label = { Text("Operador") }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp))
                     Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(value = opening, onValueChange = { opening = it }, label = { Text("Saldo inicial (centavos)") }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp))
+                    OutlinedTextField(value = opening, onValueChange = { opening = it }, label = { Text("Saldo inicial (R$)") }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp))
                     Spacer(modifier = Modifier.height(10.dp))
                     RuyPrimaryButton(text = "Abrir sessão", enabled = !busy, onClick = {
                         if (busy) return@RuyPrimaryButton
                         busy = true
                         scope.launch {
                             try {
-                                repo.openCashSession(operator, requireNotNull(opening.toIntOrNull()) { "Saldo inicial inválido" })
+                                repo.openCashSession(operator, requireNotNull(br.com.ruy.pos.ui.components.Money.cents(opening)) { "Saldo inicial inválido" })
                                 openSession = repo.getOpenCashSession()
                                 openSession?.let { movements = repo.getCashMovements(it.sessionId) }
                                 Toast.makeText(context, "Caixa aberto", Toast.LENGTH_SHORT).show()
-                            } catch (e: Exception) { Toast.makeText(context, e.message, Toast.LENGTH_LONG).show() }
+                            } catch (e: Exception) { Toast.makeText(context, br.com.ruy.pos.ui.components.OperationalText.error(e), Toast.LENGTH_LONG).show() }
                             finally { busy = false }
                         }
                     })
@@ -90,10 +90,10 @@ fun CashRegisterScreen(repo: Repository, onBack: () -> Unit) {
                     Text("Movimentações", style = MaterialTheme.typography.titleSmall)
                     Spacer(modifier = Modifier.height(6.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(value = sangria, onValueChange = { sangria = it }, label = { Text("Sangria (centavos)") }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp))
+                        OutlinedTextField(value = sangria, onValueChange = { sangria = it }, label = { Text("Sangria (R$)") }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp))
                         Button(onClick = {
                             scope.launch {
-                                repo.addCashMovement(openSession!!.sessionId, "SANGRIA", sangria.toIntOrNull() ?: 0, "Sangria")
+                                repo.addCashMovement(openSession!!.sessionId, "SANGRIA", br.com.ruy.pos.ui.components.Money.cents(sangria) ?: 0, "Sangria")
                                 sangria = ""
                                 movements = repo.getCashMovements(openSession!!.sessionId)
                             }
@@ -101,10 +101,10 @@ fun CashRegisterScreen(repo: Repository, onBack: () -> Unit) {
                     }
                     Spacer(modifier = Modifier.height(6.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(value = supply, onValueChange = { supply = it }, label = { Text("Suprimento (centavos)") }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp))
+                        OutlinedTextField(value = supply, onValueChange = { supply = it }, label = { Text("Suprimento (R$)") }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp))
                         Button(onClick = {
                             scope.launch {
-                                repo.addCashMovement(openSession!!.sessionId, "SUPRIMENTO", supply.toIntOrNull() ?: 0, "Suprimento")
+                                repo.addCashMovement(openSession!!.sessionId, "SUPRIMENTO", br.com.ruy.pos.ui.components.Money.cents(supply) ?: 0, "Suprimento")
                                 supply = ""
                                 movements = repo.getCashMovements(openSession!!.sessionId)
                             }
@@ -112,27 +112,27 @@ fun CashRegisterScreen(repo: Repository, onBack: () -> Unit) {
                     }
                     Spacer(modifier = Modifier.height(6.dp))
                     LazyColumn(modifier = Modifier.heightIn(max = 100.dp)) {
-                        items(movements) { m -> Text("${m.type}: ${reais(m.amountCents)} - ${m.reason ?: ""}", style = MaterialTheme.typography.bodySmall) }
+                        items(movements) { m -> Text("${br.com.ruy.pos.ui.components.OperationalText.movement(m.type)}: ${reais(m.amountCents)} - ${m.reason ?: ""}", style = MaterialTheme.typography.bodySmall) }
                     }
                 }
                 Spacer(modifier = Modifier.height(10.dp))
                 RuyCard {
                     Text("Fechamento", style = MaterialTheme.typography.titleSmall)
                     Spacer(modifier = Modifier.height(6.dp))
-                    OutlinedTextField(value = counted, onValueChange = { counted = it }, label = { Text("Dinheiro contado (centavos)") }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp))
+                    OutlinedTextField(value = counted, onValueChange = { counted = it }, label = { Text("Dinheiro contado (R$)") }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp))
                     Spacer(modifier = Modifier.height(10.dp))
                     RuyPrimaryButton(text = "Fechar caixa", enabled = !busy, onClick = {
                         if (busy) return@RuyPrimaryButton
                         busy = true
                         scope.launch {
                             try {
-                                val closing = repo.payments.closeCash(openSession!!.sessionId, requireNotNull(counted.toIntOrNull()) { "Informe o dinheiro contado" })
+                                val closing = repo.payments.closeCash(openSession!!.sessionId, requireNotNull(br.com.ruy.pos.ui.components.Money.cents(counted)) { "Informe o dinheiro contado" })
                                 openSession = null
                                 movements = emptyList()
                                 closings = repo.getCashClosings()
                                 Toast.makeText(context, "Caixa fechado. Diferença: ${reais(closing.differenceCents)}", Toast.LENGTH_LONG).show()
                             } catch (e: Exception) {
-                                Toast.makeText(context, e.message ?: "Falha no fechamento", Toast.LENGTH_LONG).show()
+                                Toast.makeText(context, br.com.ruy.pos.ui.components.OperationalText.error(e), Toast.LENGTH_LONG).show()
                             } finally { busy = false }
                         }
                     })
@@ -157,7 +157,7 @@ Spacer(modifier = Modifier.height(10.dp))
                                                 val share = br.com.ruy.pos.report.ShareFiles.intent(context, f, "application/pdf")
                                                 context.startActivity(Intent.createChooser(share, "Compartilhar relatório"))
                                                 Toast.makeText(context, "Relatório gerado", Toast.LENGTH_SHORT).show()
-                                            } catch (e: Exception) { Toast.makeText(context, e.message ?: "Falha no PDF", Toast.LENGTH_LONG).show() }
+                                            } catch (e: Exception) { Toast.makeText(context, br.com.ruy.pos.ui.components.OperationalText.error(e), Toast.LENGTH_LONG).show() }
                                         }
                                     }, shape = RoundedCornerShape(10.dp)) { Text("Exportar PDF") }
                                 }
