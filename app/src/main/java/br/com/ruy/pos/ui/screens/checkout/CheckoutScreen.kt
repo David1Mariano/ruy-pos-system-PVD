@@ -83,6 +83,8 @@ fun CheckoutScreen(
     var reconciliation by remember { mutableStateOf(false) }
     var external by remember { mutableStateOf(false) }
     var tapProof by remember { mutableStateOf(false) }
+    var pixDialog by remember { mutableStateOf(false) }
+    var pixQuote by remember { mutableStateOf<br.com.ruy.pos.payment.pix.PixQuote?>(null) }
     var tapCredit by remember { mutableStateOf(false) }
     var stoneAccessChecked by remember { mutableStateOf(false) }
     var readiness by remember { mutableStateOf(TapStoneReadiness.read(context)) }
@@ -120,10 +122,24 @@ fun CheckoutScreen(
         } ?: items.map { (name, qty) -> Triple(name, qty, unitPrice[name] ?: 0) }
     }
     LaunchedEffect(remaining) { amount = Money.input(remaining) }
+    LaunchedEffect(attempt?.attemptId) {
+        if (attempt?.origin == "PIX_STATIC") {
+            pixQuote = try { kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { br.com.ruy.pos.payment.pix.PixInvoiceStore(context).load(attempt.attemptId) } }
+            catch (e: Exception) { SupportDiagnostics.record(e); null }
+        }
+    }
     LaunchedEffect(order?.paymentStatus, active) {
         if (order?.paymentStatus == "PAGO" && active == null) onPaidAndClosed()
     }
 
+    if (pixDialog && attempt?.origin == "PIX_STATIC" && payment != null) PixPaymentDialog(attempt, payment, pixQuote, processing, error,
+        onDismiss = { pixDialog = false; error = null }, onConfirm = { proof ->
+            if (!processing) { processing = true; scope.launch {
+                try { repo.payments.confirmPix(proof); pixDialog = false; error = null }
+                catch (e: Exception) { error = OperationalText.error(e) }
+                finally { processing = false }
+            } }
+        })
     if (external) ExternalPaymentDialog(orderId ?: "", method, amountCents, processing, error,
         onDismiss = { external = false; error = null }, onConfirm = { input ->
             if (!processing) {
@@ -151,7 +167,7 @@ fun CheckoutScreen(
                 }
             }
         })
-    if (reconciliation && attempt != null && payment != null && attempt.origin != "TAPSTONE_EXTERNAL") StoneReconciliationDialog(attempt, payment, processing,
+    if (reconciliation && attempt != null && payment != null && attempt.origin !in setOf("TAPSTONE_EXTERNAL", "PIX_STATIC")) StoneReconciliationDialog(attempt, payment, processing,
         error = error, onDismiss = { reconciliation = false; error = null }, onConfirm = { input ->
             if (!processing) {
                 processing = true
@@ -186,7 +202,7 @@ fun CheckoutScreen(
             RuyCard {
                 Text("Forma de pagamento", style = MaterialTheme.typography.titleSmall)
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    listOf("DINHEIRO" to "Dinheiro", "PIX" to "Pix externo", "DEBITO" to "Débito externo", "CREDITO" to "Crédito externo").forEach { (value, label) ->
+                    listOf("DINHEIRO" to "Dinheiro", "PIX" to "Pix QR Code", "DEBITO" to "Débito externo", "CREDITO" to "Crédito externo").forEach { (value, label) ->
                         FilterChip(selected = method == value, enabled = !processing && active == null,
                             onClick = { method = value }, label = { Text(label) })
                     }
@@ -211,10 +227,10 @@ fun CheckoutScreen(
                     }
                     Text("NONE: à vista. Parcelamento conforme contrato e opções do terminal; sem cálculo de taxas.", style = MaterialTheme.typography.bodySmall)
                 }
-                if (method != "DINHEIRO") {
-                    Text(stone.unavailableReason() ?: "Aplicativo resolvido; pagamento sujeito ao suporte do terminal", style = MaterialTheme.typography.bodySmall)
-                    TextButton(enabled = !processing && active == null, onClick = { setup = true }) { Text("Conferir Ajustes Stone") }
-                    if (method == "PIX") Text("Pix depende do equipamento. QR exibido não confirma recebimento.", style = MaterialTheme.typography.bodySmall)
+                if (method == "PIX") {
+                    Text("QR estático • confirme o crédito no banco. Configure a conta em Mais > Configurações > Pagamentos.", style = MaterialTheme.typography.bodySmall)
+                } else if (method != "DINHEIRO") {
+                    Text("Realize a cobrança no equipamento autorizado e confira a aprovação antes de registrar.", style = MaterialTheme.typography.bodySmall)
                     TextButton(enabled = !br.com.ruy.pos.BuildConfig.HOMOLOGATION && !processing && active == null, onClick = { external = true }) { Text("Pagamento externo já ocorreu (maquininha/banco)") }
                 }
             }
@@ -256,10 +272,9 @@ fun CheckoutScreen(
                 }
             }
             if (attempt != null) RuyCard {
-                Text("Stone ${attempt.state} • referência ${attempt.stoneOrderId}", style = MaterialTheme.typography.titleSmall)
-                Text(attempt.detail ?: "Aguardando retorno. Não inicie outra cobrança.")
-                Text("ATK informado: ${attempt.atk ?: "não informado"}", style = MaterialTheme.typography.bodySmall)
-                TextButton(enabled = !processing, onClick = { error = null; if (attempt.origin == "TAPSTONE_EXTERNAL") tapProof = true else reconciliation = true }) { Text("Conferir comprovante/extrato e conciliar") }
+                Text(OperationalText.status(attempt.state), style = MaterialTheme.typography.titleSmall)
+                Text("Confira o comprovante no banco ou provedor antes de registrar o recebimento. Voltar ao pedido não confirma pagamento.")
+                TextButton(enabled = !processing, onClick = { error = null; when(attempt.origin) { "PIX_STATIC" -> pixDialog = true; "TAPSTONE_EXTERNAL" -> tapProof = true; else -> reconciliation = true } }) { Text("Conferir recebimento") }
             }
             if (active != null && attempt == null) Text("Existe pagamento pendente em outro pedido. Retome-o antes de cobrar novamente.")
             if (legacy != null && active == null) TextButton(enabled = !processing, onClick = {
@@ -271,7 +286,7 @@ fun CheckoutScreen(
                 }
             }) { Text("Recuperar pagamento anterior para conciliação") }
             error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-            RuyPrimaryButton(text = if (processing) "Processando…" else "Confirmar pagamento",
+            RuyPrimaryButton(text = if (processing) "Processando…" else if (method == "PIX") "Gerar QR Pix" else if (method == "DINHEIRO") "Confirmar dinheiro" else "Conferir pagamento externo",
                 enabled = !processing && order != null && active == null && remaining > 0,
                 onClick = {
                     if (processing) return@RuyPrimaryButton
@@ -284,6 +299,13 @@ fun CheckoutScreen(
                             if (method == "DINHEIRO") {
                                 repo.payments.confirmCash(id, amountCents, receivedCents)
                                 notify("Dinheiro registrado. Troco: ${reais(change)}")
+                            } else if (method == "PIX") {
+                                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                    val service = br.com.ruy.pos.payment.pix.PixCheckoutService(repo.payments,
+                                        br.com.ruy.pos.payment.pix.PixSettingsStore(context), br.com.ruy.pos.payment.pix.PixInvoiceStore(context))
+                                    service.prepare(id, amountCents)
+                                }
+                                pixDialog = true
                             } else {
                                 check(!br.com.ruy.pos.BuildConfig.HOMOLOGATION) { "Use pagamento simulado em homologação" }
                                 external = true

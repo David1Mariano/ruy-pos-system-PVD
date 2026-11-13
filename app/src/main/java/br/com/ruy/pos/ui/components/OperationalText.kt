@@ -61,6 +61,7 @@ object OperationalText {
         SupportDiagnostics.record(error)
         val message = error.message.orEmpty()
         return when {
+            "Configure a conta" in message -> "Cadastre a conta Pix em Mais > Configurações > Pagamentos antes de gerar o código."
             "Caixa" in message || "caixa" in message -> "Confira se o caixa está aberto e se não há pagamentos pendentes."
             "saldo" in message || "Valor" in message || "valor" in message -> "Confira o valor informado e o saldo a pagar."
             "comprovante" in message || "Comprovante" in message || "Referência" in message -> "Confira o comprovante. Ele deve corresponder a este pagamento e não pode ser reutilizado."
