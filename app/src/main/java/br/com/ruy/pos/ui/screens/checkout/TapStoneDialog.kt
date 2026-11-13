@@ -36,7 +36,7 @@ fun TapStoneDialog(a: StoneAttemptEntity, payment: PaymentEntity, busy: Boolean,
                 FilterChip(received, { received = true; checked = false }, label = { Text("Recebido") }, enabled = !busy)
                 FilterChip(!received, { received = false; checked = false }, label = { Text("Não recebido") }, enabled = !busy)
             }
-            OutlinedTextField(amount, { amount = it }, label = { Text("Valor conferido (R$)") })
+            OutlinedTextField(amount, { amount = it }, label = { Text("Valor conferido (R$)") }, keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal))
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 FilterChip(method == "TAPSTONE_DEBIT", { method = "TAPSTONE_DEBIT" }, label = { Text("Débito") }, enabled = !busy)
                 FilterChip(method == "TAPSTONE_CREDIT", { method = "TAPSTONE_CREDIT" }, label = { Text("Crédito") }, enabled = !busy)

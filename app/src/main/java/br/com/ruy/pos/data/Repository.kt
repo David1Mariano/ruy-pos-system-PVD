@@ -65,13 +65,17 @@ class Repository internal constructor(private val db: AppDatabase, options: () -
     suspend fun productLocalAll() = productLocalDao.getAll()
     
     suspend fun saveCategory(id: String, name: String) {
-        categoryDao.insert(CategoryEntity(id = id, name = name, active = true))
+        require(id.isNotBlank() && name.trim().length in 1..80) { "Informe o nome da categoria" }
+        categoryDao.insert(CategoryEntity(id = id, name = name.trim(), active = true))
     }
     suspend fun saveProductLocal(id: String, categoryId: String?, name: String, priceCents: Int, active: Boolean = true, imagePath: String? = null) {
-        productLocalDao.insert(ProductLocalEntity(id = id, categoryId = categoryId, name = name, priceCents = priceCents, active = active, imagePath = imagePath))
+        require(id.isNotBlank() && name.trim().length in 1..120 && priceCents > 0) { "Informe nome e preço válidos" }
+        productLocalDao.insert(ProductLocalEntity(id = id, categoryId = categoryId, name = name.trim(), priceCents = priceCents, active = active, imagePath = imagePath))
     }
 
     suspend fun saveOrder(totalCents: Int, items: List<Pair<String,Int>>, unitCents: Map<String,Int>, deviceId: String?, operatorId: String?): String {
+        require(totalCents > 0 && items.isNotEmpty() && items.all { (name, qty) -> name.isNotBlank() && qty > 0 && (unitCents[name] ?: 0) > 0 } &&
+            items.sumOf { (name, qty) -> requireNotNull(unitCents[name]).toLong() * qty } == totalCents.toLong()) { "Confira itens e valor do pedido" }
         val id = UUID.randomUUID().toString()
         val arr = JSONArray()
         items.forEach { (name, qty) ->

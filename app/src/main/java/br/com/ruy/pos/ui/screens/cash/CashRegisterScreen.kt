@@ -77,7 +77,7 @@ fun CashRegisterScreen(repo: Repository, onBack: () -> Unit) {
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(value = operator, onValueChange = { operator = it }, label = { Text("Operador") }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp))
                     Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(value = opening, onValueChange = { opening = it }, label = { Text("Saldo inicial (R$)") }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp))
+                    OutlinedTextField(value = opening, onValueChange = { opening = it }, label = { Text("Saldo inicial (R$)") }, keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal), modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp))
                     Spacer(modifier = Modifier.height(10.dp))
                     RuyPrimaryButton(text = "Abrir sessão", enabled = !busy, onClick = {
                         if (busy) return@RuyPrimaryButton
@@ -110,14 +110,14 @@ fun CashRegisterScreen(repo: Repository, onBack: () -> Unit) {
                     Text("Movimentações", style = MaterialTheme.typography.titleSmall)
                     Spacer(modifier = Modifier.height(6.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(value = sangria, onValueChange = { sangria = it }, label = { Text("Sangria (R$)") }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp))
+                        OutlinedTextField(value = sangria, onValueChange = { sangria = it }, label = { Text("Sangria (R$)") }, keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal), modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp))
                         Button(enabled = !busy, onClick = {
                             registerMovement("SANGRIA", sangria) { sangria = "" }
                         }, shape = RoundedCornerShape(10.dp)) { Text("Registrar") }
                     }
                     Spacer(modifier = Modifier.height(6.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(value = supply, onValueChange = { supply = it }, label = { Text("Suprimento (R$)") }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp))
+                        OutlinedTextField(value = supply, onValueChange = { supply = it }, label = { Text("Suprimento (R$)") }, keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal), modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp))
                         Button(enabled = !busy, onClick = {
                             registerMovement("SUPRIMENTO", supply) { supply = "" }
                         }, shape = RoundedCornerShape(10.dp)) { Text("Registrar") }
@@ -131,7 +131,7 @@ fun CashRegisterScreen(repo: Repository, onBack: () -> Unit) {
                 RuyCard {
                     Text("Fechamento", style = MaterialTheme.typography.titleSmall)
                     Spacer(modifier = Modifier.height(6.dp))
-                    OutlinedTextField(value = counted, onValueChange = { counted = it }, label = { Text("Dinheiro contado (R$)") }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp))
+                    OutlinedTextField(value = counted, onValueChange = { counted = it }, label = { Text("Dinheiro contado (R$)") }, keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal), modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp))
                     Spacer(modifier = Modifier.height(10.dp))
                     RuyPrimaryButton(text = "Fechar caixa", enabled = !busy, onClick = {
                         if (busy) return@RuyPrimaryButton

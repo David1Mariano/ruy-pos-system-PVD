@@ -39,7 +39,7 @@ import kotlinx.coroutines.withContext
     var checked by remember { mutableStateOf(false) }
     LaunchedEffect(quote?.payload) {
         if (quote != null && !BuildConfig.HOMOLOGATION) bitmap = withContext(Dispatchers.Default) {
-            val matrix = QRCodeWriter().encode(quote.payload, BarcodeFormat.QR_CODE, 480, 480, mapOf(EncodeHintType.MARGIN to 4))
+            val matrix = QRCodeWriter().encode(quote.payload, BarcodeFormat.QR_CODE, 480, 480, mapOf(EncodeHintType.MARGIN to 4, EncodeHintType.ERROR_CORRECTION to com.google.zxing.qrcode.decoder.ErrorCorrectionLevel.M))
             val pixels = IntArray(matrix.width * matrix.height) { index -> if (matrix[index % matrix.width, index / matrix.width]) android.graphics.Color.BLACK else android.graphics.Color.WHITE }
             Bitmap.createBitmap(pixels, matrix.width, matrix.height, Bitmap.Config.ARGB_8888)
         }
@@ -69,7 +69,7 @@ import kotlinx.coroutines.withContext
                     FilterChip(!received, { received = false; checked = false }, label = { Text("Não recebido") })
                 }
                 if (!received) Text("O QR estático não expira e não pode ser cancelado no banco por este aplicativo. Se ele foi compartilhado, continue conferindo possíveis créditos posteriores.")
-                OutlinedTextField(amount, { amount = it }, label = { Text("Valor conferido (R$)") })
+                OutlinedTextField(amount, { amount = it }, label = { Text("Valor conferido (R$)") }, keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal))
                 if (received) OutlinedTextField(reference, { reference = it }, label = { Text("Referência do comprovante bancário") })
                 OutlinedTextField(operator, { operator = it }, label = { Text("Operador responsável") })
                 OutlinedTextField(evidence, { evidence = it }, label = { Text("Extrato consultado • data e hora") })

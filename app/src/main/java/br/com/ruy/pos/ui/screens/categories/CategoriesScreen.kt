@@ -23,6 +23,8 @@ import java.util.UUID
 @Composable
 fun CategoriesScreen(repo: Repository, onBack: () -> Unit, onBackup: () -> Unit = {}, onReports: () -> Unit = {}, onSettings: () -> Unit = {}) {
     val scope = rememberCoroutineScope()
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var saving by remember { mutableStateOf(false) }
     var name by remember { mutableStateOf("") }
     var items by remember { mutableStateOf<List<CategoryEntity>>(emptyList()) }
     var editing by remember { mutableStateOf<CategoryEntity?>(null) }
@@ -40,13 +42,18 @@ fun CategoriesScreen(repo: Repository, onBack: () -> Unit, onBackup: () -> Unit 
                 OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Nome") }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp))
                 Spacer(modifier = Modifier.height(10.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    RuyPrimaryButton(text = if (editing == null) "Salvar" else "Atualizar", onClick = {
+                    RuyPrimaryButton(text = if (editing == null) "Salvar" else "Atualizar", enabled = !saving && name.trim().isNotEmpty(), onClick = {
+                        if (saving) return@RuyPrimaryButton
+                        saving = true
                         scope.launch {
+                            try {
                             val id = editing?.id ?: UUID.randomUUID().toString()
                             repo.saveCategory(id, name)
                             name = ""
                             editing = null
                             items = repo.categories()
+                            } catch (e: Exception) { android.widget.Toast.makeText(context, "Não foi possível salvar a categoria. Confira o nome e tente novamente.", android.widget.Toast.LENGTH_LONG).show(); br.com.ruy.pos.ui.components.SupportDiagnostics.record(e) }
+                            finally { saving = false }
                         }
                     }, modifier = Modifier.weight(1f))
                     if (editing != null) {

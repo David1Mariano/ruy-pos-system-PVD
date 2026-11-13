@@ -84,4 +84,10 @@ class VoucherPaymentSimulatedTest {
         assertEquals(400, modes.getInt("VOUCHER_EXTERNAL")); assertEquals(500, modes.getInt("TAPSTONE"))
         assertEquals(300, modes.getInt("DEBIT_EXTERNAL")); assertEquals(500, modes.getInt("CREDIT_EXTERNAL"))
     }
+    @Test fun caseVariationOfReceiptCannotCountAsNewPayment() = runBlocking {
+        repo.payments.confirmExternal(order, 1000, "DEBIT", "Fictício", "FICTICIO extrato", transactionRef = "External-Unique-01")
+        rejected { repo.payments.confirmExternal(order, 1000, "DEBIT", "Fictício", "FICTICIO extrato", transactionRef = "external-unique-01") }
+        assertEquals(1, repo.getAllPayments().size)
+        assertEquals("PARCIAL", repo.getOrder(order)!!.paymentStatus)
+    }
 }

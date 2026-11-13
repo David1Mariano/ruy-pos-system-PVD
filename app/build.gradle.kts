@@ -10,14 +10,27 @@ android {
         applicationId = "br.com.ruy.pos"
         minSdk = 23
         targetSdk = 34
-        versionCode = 21
-        versionName = "0.9.3"
+        versionCode = 22
+        versionName = "0.10.0-rc1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         manifestPlaceholders["stoneReturnScheme"] = "ruypos-stone"
         buildConfigField("boolean", "HOMOLOGATION", "false")
         buildConfigField("boolean", "SMART_POS_REAL_ENABLED", "false")
     }
+    val signingEnv = listOf("RUY_RELEASE_STORE_FILE", "RUY_RELEASE_STORE_PASSWORD", "RUY_RELEASE_KEY_ALIAS", "RUY_RELEASE_KEY_PASSWORD").map { System.getenv(it) }
+    require(signingEnv.all { it.isNullOrBlank() } || signingEnv.all { !it.isNullOrBlank() }) { "Configuração de assinatura incompleta; use o procedimento protegido de release" }
+    if (signingEnv.all { !it.isNullOrBlank() }) signingConfigs.create("protectedRelease") {
+        storeFile = file(requireNotNull(signingEnv[0]))
+        storeType = "PKCS12"
+        storePassword = signingEnv[1]
+        keyAlias = signingEnv[2]
+        keyPassword = signingEnv[3]
+    }
     buildTypes {
+        getByName("release") {
+            isDebuggable = false
+            if (signingEnv.all { !it.isNullOrBlank() }) signingConfig = signingConfigs.getByName("protectedRelease")
+        }
         create("homologation") {
             initWith(getByName("debug"))
             applicationIdSuffix = ".homologation"

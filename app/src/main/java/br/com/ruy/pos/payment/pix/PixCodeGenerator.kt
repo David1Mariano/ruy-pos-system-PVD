@@ -59,6 +59,7 @@ object PixBrCode {
         val account = parse(requireNotNull(f["26"]))
         require(account["00"].equals("br.gov.bcb.pix", true) && account.keys == setOf("00", "01"))
         val key = requireNotNull(account["01"]); require(key.length in 1..77)
+        require(PixKeyType.values().any { type -> runCatching { PixValidation.key(type, key) }.isSuccess }) { "Formato de chave Pix inválido" }
         val txid = requireNotNull(parse(requireNotNull(f["62"]))["05"])
         require(txid == "***" || txid.matches(Regex("[A-Za-z0-9]{1,25}")))
         val name = requireNotNull(f["59"]); val city = requireNotNull(f["60"])

@@ -26,6 +26,19 @@ class PixBrCodeTest {
         val pixels = IntArray(matrix.width * matrix.height) { i -> if (matrix[i % matrix.width, i / matrix.width]) -0x1000000 else -1 }
         val decoded = MultiFormatReader().decode(BinaryBitmap(HybridBinarizer(RGBLuminanceSource(matrix.width, matrix.height, pixels))))
         assertEquals(quote.payload, decoded.text)
+        val fixtureDir = System.getenv("RUY_PIX_FIXTURE_DIR")
+        if (!fixtureDir.isNullOrBlank() && br.com.ruy.pos.BuildConfig.DEBUG && !br.com.ruy.pos.BuildConfig.HOMOLOGATION) {
+            val dir = java.io.File(fixtureDir).apply { mkdirs() }
+            java.io.File(dir, "pix-ficticio-copia-cola.txt").writeText(quote.payload)
+            val modules = QRCodeWriter().encode(quote.payload, BarcodeFormat.QR_CODE, 1, 1, mapOf(EncodeHintType.ERROR_CORRECTION to com.google.zxing.qrcode.decoder.ErrorCorrectionLevel.M, EncodeHintType.MARGIN to 4))
+            val svg = buildString {
+                append("<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"480\" height=\"480\" viewBox=\"0 0 ${modules.width} ${modules.height}\" shape-rendering=\"crispEdges\"><title>HOMOLOGACAO - CHAVE FICTICIA - SEM VALOR FINANCEIRO</title><rect width=\"100%\" height=\"100%\" fill=\"white\"/>")
+                for (y in 0 until modules.height) for (x in 0 until modules.width) if (modules[x, y]) append("<rect x=\"$x\" y=\"$y\" width=\"1\" height=\"1\" fill=\"black\"/>")
+                append("</svg>")
+            }
+            java.io.File(dir, "pix-ficticio-validado.svg").writeText(svg)
+            java.io.File(dir, "LEIA-ANTES-DO-QR.txt").writeText("HOMOLOGAÇÃO: chave fictícia demo@example.invalid. Sem valor financeiro. Não é comprovante nem teste bancário. O payload e a imagem foram validados por CRC, parser BR Code e decodificação ZXing, sem comunicação com bancos.")
+        }
     }
     @Test fun corruptionUnsupportedReferencesAndNonPositiveAmountsAreRejected() {
         val payload = PixBrCode.encode(a, 1, "FICTICIO1")

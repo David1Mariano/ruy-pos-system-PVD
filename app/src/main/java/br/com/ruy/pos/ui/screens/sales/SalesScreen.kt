@@ -141,7 +141,7 @@ fun SalesScreen(repo: Repository, onBack: () -> Unit, onOrderRegistered: (String
                                     val id = repo.saveOrder(total, items, unitPrice, null, null)
                                     cart.clear()
                                     recalc()
-                                    Toast.makeText(context, "Pedido $id registrado", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "Pedido ${id.take(8).uppercase()} registrado", Toast.LENGTH_SHORT).show()
                                     onOrderRegistered(id)
                                 } catch (e: Exception) {
                                     Toast.makeText(context, br.com.ruy.pos.ui.components.OperationalText.error(e), Toast.LENGTH_SHORT).show()

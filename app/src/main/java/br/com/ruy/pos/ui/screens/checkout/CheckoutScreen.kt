@@ -45,7 +45,7 @@ fun ExternalPaymentDialog(orderId: String, method: String, amountCents: Int, bus
             providerInfo?.let { Text(it) }
             Text("O pagamento foi efetuado em outro provedor/maquininha. Nenhum dado do cartão é coletado pelo Ruy POS.")
             OutlinedTextField(reference, { reference = it }, label = { Text("Referência do comprovante aprovado") })
-            OutlinedTextField(checkedAmount, { checkedAmount = it }, label = { Text("Valor conferido (R$)") })
+            OutlinedTextField(checkedAmount, { checkedAmount = it }, label = { Text("Valor conferido (R$)") }, keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal))
             if (method == "CREDITO") OutlinedTextField(installments, { installments = it }, label = { Text("Parcelas (1 a 99)") })
             OutlinedTextField(operator, { operator = it }, label = { Text("Operador responsável") })
             OutlinedTextField(evidence, { evidence = it }, label = { Text("Comprovante/extrato consultado (data/hora e identificador)") })
@@ -84,7 +84,6 @@ fun CheckoutScreen(
     var amount by remember { mutableStateOf("") }
     var processing by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
-    var setup by remember { mutableStateOf(false) }
     var reconciliation by remember { mutableStateOf(false) }
     var external by remember { mutableStateOf(false) }
     var tapProof by remember { mutableStateOf(false) }
@@ -95,6 +94,7 @@ fun CheckoutScreen(
     var tapTermsChecked by remember { mutableStateOf(false) }
     var stoneAccessChecked by remember { mutableStateOf(false) }
     var vouchers by remember { mutableStateOf(emptyList<VoucherRule>()) }
+    var pixConfigured by remember { mutableStateOf(false) }
     var readiness by remember { mutableStateOf(TapStoneReadiness.read(context)) }
     val lifecycle = androidx.compose.ui.platform.LocalLifecycleOwner.current.lifecycle
     DisposableEffect(lifecycle) {
@@ -104,11 +104,11 @@ fun CheckoutScreen(
         lifecycle.addObserver(observer)
         onDispose { lifecycle.removeObserver(observer) }
     }
-    var configuration by remember { mutableStateOf(StoneConfiguration.read(context)) }
-    val stone = remember(configuration) { StonePaymentGateway(context, configuration) }
     val active by remember { repo.payments.observeActive() }.collectAsState(initial = null)
 
     LaunchedEffect(Unit) {
+        try { pixConfigured = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { br.com.ruy.pos.payment.pix.PixSettingsStore(context).load() != null } }
+        catch (e: Exception) { SupportDiagnostics.record(e) }
         try { vouchers = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { PaymentCapabilitiesStore(context).load().vouchers } }
         catch (e: Exception) { SupportDiagnostics.record(e) }
         try { if (orderId == null) orderId = repo.prepareCheckout(totalCents, items, unitPrice, comandaId) }
@@ -167,7 +167,6 @@ fun CheckoutScreen(
                 }
             }
         })
-    if (setup) StoneSetupDialog(configuration, onDismiss = { setup = false }, onSaved = { configuration = it; setup = false })
     if (tapProof && attempt?.origin == "TAPSTONE_EXTERNAL" && payment != null) TapStoneDialog(attempt, payment, processing, error,
         onDismiss = { tapProof = false; error = null }, onConfirm = { proof ->
             if (!processing) {
@@ -220,14 +219,14 @@ fun CheckoutScreen(
                     }
                 }
                 OutlinedTextField(amount, { amount = it }, enabled = !processing && active == null,
-                    label = { Text("Valor desta cobrança (R$)") }, modifier = Modifier.fillMaxWidth())
+                    label = { Text("Valor desta cobrança (R$)") }, keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal), modifier = Modifier.fillMaxWidth())
                 if (method == "DINHEIRO") {
                     OutlinedTextField(received, { received = it }, enabled = !processing && active == null,
-                        label = { Text("Valor recebido (R$)") }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp))
+                        label = { Text("Valor recebido (R$)") }, keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal), modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp))
                     Text("Troco: ${reais(change)}")
                 }
                 if (method == "PIX") {
-                    Text("QR estático • confirme o crédito no banco. Configure a conta em Mais > Configurações > Pagamentos.", style = MaterialTheme.typography.bodySmall)
+                    Text(if (pixConfigured) "QR estático • confirme o crédito no banco antes de registrar o recebimento." else "Pix indisponível: cadastre a conta em Mais > Configurações > Pagamentos.", style = MaterialTheme.typography.bodySmall)
                 } else if (method != "DINHEIRO") {
                     Text("Realize a cobrança no equipamento autorizado e confira a aprovação antes de registrar.", style = MaterialTheme.typography.bodySmall)
                     TextButton(enabled = !br.com.ruy.pos.BuildConfig.HOMOLOGATION && !processing && active == null, onClick = { external = true }) { Text("Pagamento externo já ocorreu (maquininha/banco)") }
@@ -292,7 +291,7 @@ fun CheckoutScreen(
             }) { Text("Recuperar pagamento anterior para conciliação") }
             error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             RuyPrimaryButton(text = if (processing) "Processando…" else if (method == "PIX") "Gerar QR Pix" else if (method == "DINHEIRO") "Confirmar dinheiro" else "Conferir pagamento externo",
-                enabled = !processing && order != null && active == null && remaining > 0,
+                enabled = !processing && order != null && active == null && remaining > 0 && (method != "PIX" || pixConfigured),
                 onClick = {
                     if (processing) return@RuyPrimaryButton
                     processing = true

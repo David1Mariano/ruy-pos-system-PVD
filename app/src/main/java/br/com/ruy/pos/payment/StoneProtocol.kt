@@ -69,6 +69,7 @@ object StoneProtocol {
         }
         require(all["code"]?.matches(Regex("-?[0-9]{1,6}")) == true) { "Código ausente/inválido" }
         val safe = all.filterKeys { it in persistedFields }.toSortedMap()
+        br.com.ruy.pos.security.PaymentAudit.validate(*safe.values.toTypedArray())
         val canonical = safe.entries.joinToString("") { "${it.key.length}:${it.key}${it.value.length}:${it.value}" }
         return Callback(safe, fingerprint(canonical))
     }

@@ -55,6 +55,7 @@ fun ProductsScreen(repo: Repository, onBack: () -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     var imagePath by remember { mutableStateOf<String?>(null) }
     var search by remember { mutableStateOf("") }
+    var saving by remember { mutableStateOf(false) }
 
     val pickMedia = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri: Uri? ->
         if (uri != null) {
@@ -69,7 +70,7 @@ fun ProductsScreen(repo: Repository, onBack: () -> Unit) {
                     input.close()
                     out.close()
                     withContext(Dispatchers.Main) { imagePath = file.absolutePath }
-                } catch (e: Exception) {}
+                } catch (e: Exception) { br.com.ruy.pos.ui.components.SupportDiagnostics.record(e); withContext(Dispatchers.Main) { android.widget.Toast.makeText(context, "Não foi possível carregar esta foto. Selecione outra imagem.", android.widget.Toast.LENGTH_LONG).show() } }
             }
         }
     }
@@ -93,7 +94,7 @@ fun ProductsScreen(repo: Repository, onBack: () -> Unit) {
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Nome") }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp))
                 Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(value = price, onValueChange = { price = it }, label = { Text("Preço (R$)") }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp))
+                OutlinedTextField(value = price, onValueChange = { price = it }, label = { Text("Preço (R$)") }, keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal), modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp))
                 Spacer(modifier = Modifier.height(8.dp))
                 ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
                     OutlinedTextField(value = categories.firstOrNull { it.id == categoryId }?.name ?: "", onValueChange = {}, readOnly = true, label = { Text("Categoria") }, trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) }, modifier = Modifier.menuAnchor().fillMaxWidth(), shape = RoundedCornerShape(12.dp))
@@ -112,13 +113,18 @@ fun ProductsScreen(repo: Repository, onBack: () -> Unit) {
                 }
                 Spacer(modifier = Modifier.height(10.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    RuyPrimaryButton(text = if (editing == null) "Salvar" else "Atualizar", onClick = {
+                    RuyPrimaryButton(text = if (editing == null) "Salvar" else "Atualizar", enabled = !saving && name.trim().isNotEmpty() && (br.com.ruy.pos.ui.components.Money.cents(price) ?: 0) > 0, onClick = {
+                        if (saving) return@RuyPrimaryButton
+                        saving = true
                         scope.launch {
+                            try {
                             val id = editing?.id ?: UUID.randomUUID().toString()
                             val pc = br.com.ruy.pos.ui.components.Money.cents(price) ?: 0
                             repo.saveProductLocal(id, categoryId, name, pc, true, imagePath)
                             name = ""; price = ""; categoryId = null; editing = null; imagePath = null
                             items = repo.productLocalAll()
+                            } catch (e: Exception) { android.widget.Toast.makeText(context, "Não foi possível salvar o produto. Confira o nome e o preço.", android.widget.Toast.LENGTH_LONG).show(); br.com.ruy.pos.ui.components.SupportDiagnostics.record(e) }
+                            finally { saving = false }
                         }
                     }, modifier = Modifier.weight(1f))
                     if (editing != null) { OutlinedButton(onClick = { editing = null; name = ""; price = ""; categoryId = null; imagePath = null }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp)) { Text("Cancelar") } }

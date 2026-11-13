@@ -1,6 +1,6 @@
 # Ruy POS System
 
-Estado Android/NFC 0.9.3: consulte o [roteiro de homologação](docs/ANDROID-NFC-RUNBOOK.md) e as [evidências e limitações](docs/ANDROID-NFC-EVIDENCE.md). O APK de homologação usa package e dados separados; pagamentos reais continuam sujeitos à validação autorizada.
+Candidata comercial 0.10.0-rc1: consulte o [roteiro operacional](docs/COMMERCIAL-OPERATIONS.md), as [evidências e limitações](docs/COMMERCIAL-EVIDENCE.md) e o [procedimento de assinatura](docs/COMMERCIAL-SIGNING.md). Pix estático e pagamentos externos exigem conferência manual. Há homologação isolada; o candidato comercial segue sem assinatura e sem publicação definitiva. O histórico Android/NFC 0.9.3 está em [evidências anteriores](docs/ANDROID-NFC-EVIDENCE.md).
 
 As seções históricas abaixo descrevem o protótipo 0.2.0, não todas as funções atuais.
 

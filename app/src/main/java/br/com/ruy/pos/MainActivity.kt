@@ -63,7 +63,7 @@ class MainActivity : Activity() {
         val sub = TextView(this).apply { text="Ruy Caldo de Cana"; textSize=13f; setTextColor(black); gravity=Gravity.CENTER; setPadding(0,0,0,10) }
         root.addView(sub)
         val bar = LinearLayout(this).apply { orientation=LinearLayout.HORIZONTAL; setPadding(4,4,4,8) }
-        val token = prefs.getString("device_token","") ?: ""
+        val token = br.com.ruy.pos.security.SecureTokenStore(this@MainActivity).read()
         val st = TextView(this).apply { text="Status: "; textSize=12f; setTextColor(black) }
         bar.addView(st, LinearLayout.LayoutParams(0,-2,1f))
         root.addView(bar)
@@ -104,13 +104,14 @@ class MainActivity : Activity() {
         val url = EditText(this).apply { setText(prefs.getString("sync_url","https://api.ruycaldodecana.com.br/api/pos/orders")); hint="https://host/api/pos/orders"; setPadding(12,12,12,12) }
         root.addView(url)
         label("Token do terminal (Bearer)")
-        val tok = EditText(this).apply { setText(prefs.getString("device_token","")); hint="token hex"; setPadding(12,12,12,12) }
+        val tok = EditText(this).apply { inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD;  setText(br.com.ruy.pos.security.SecureTokenStore(this@MainActivity).read()); hint="token hex"; setPadding(12,12,12,12) }
         root.addView(tok)
         button("SALVAR") {
             val u = url.text.toString().trim()
             val t = tok.text.toString().trim()
             if(!u.startsWith("https://")) { Toast.makeText(this,"Exigir HTTPS",Toast.LENGTH_LONG).show(); return@button }
-            prefs.edit().putString("sync_url",u).putString("device_token",t).apply()
+            br.com.ruy.pos.security.SecureTokenStore(this@MainActivity).write(t)
+            prefs.edit().putString("sync_url",u).apply()
             Toast.makeText(this,"Salvo",Toast.LENGTH_SHORT).show()
             home()
         }
@@ -223,7 +224,7 @@ class MainActivity : Activity() {
     
     private fun syncNow() {
         val url = prefs.getString("sync_url","") ?: ""
-        val token = prefs.getString("device_token","") ?: ""
+        val token = br.com.ruy.pos.security.SecureTokenStore(this@MainActivity).read()
         if(!url.startsWith("https://")) { Toast.makeText(this,"Exigir HTTPS",Toast.LENGTH_SHORT).show(); config(); return }
         if(token.isBlank()) { Toast.makeText(this,"Token ausente",Toast.LENGTH_SHORT).show(); config(); return }
         Toast.makeText(this,"Sincronizando agora...",Toast.LENGTH_SHORT).show()

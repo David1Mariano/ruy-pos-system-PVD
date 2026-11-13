@@ -1,4 +1,4 @@
-﻿package br.com.ruy.pos.sync
+package br.com.ruy.pos.sync
 
 import android.content.Context
 import androidx.work.CoroutineWorker
@@ -12,7 +12,7 @@ class SyncWorker(appContext: Context, params: WorkerParameters) : CoroutineWorke
         if (br.com.ruy.pos.BuildConfig.HOMOLOGATION) return androidx.work.ListenableWorker.Result.success()
         val prefs = applicationContext.getSharedPreferences("ruy_pos_v1", Context.MODE_PRIVATE)
         val url = prefs.getString("sync_url", "") ?: ""
-        val token = prefs.getString("device_token", "") ?: ""
+        val token = try { br.com.ruy.pos.security.SecureTokenStore(applicationContext).read() } catch (_: Exception) { return androidx.work.ListenableWorker.Result.retry() }
         if (!url.startsWith("https://")) return androidx.work.ListenableWorker.Result.retry()
         if (token.isBlank()) return androidx.work.ListenableWorker.Result.retry()
         val repo = Repository(applicationContext)

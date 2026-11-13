@@ -51,7 +51,7 @@ object PixValidation {
             PixKeyType.CNPJ -> cnpj(value)
             PixKeyType.PHONE -> value.matches(Regex("\\+55[1-9][0-9]9[0-9]{8}"))
             PixKeyType.RANDOM -> value.matches(Regex("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"))
-            PixKeyType.EMAIL -> value.length <= 77 && value.matches(Regex("[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+")) && !value.startsWith('.') && !value.contains("..")
+            PixKeyType.EMAIL -> value.length <= 77 && value.substringBefore('@').length <= 64 && value.matches(Regex("[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+")) && !value.startsWith('.') && !value.substringBefore('@').endsWith('.') && !value.contains("..")
         }
         require(valid && value.length in 1..77 && value.all { it.code in 33..126 }) { "Chave Pix inválida para o tipo selecionado" }
         return value

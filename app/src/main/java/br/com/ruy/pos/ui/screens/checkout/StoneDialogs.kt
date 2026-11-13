@@ -42,7 +42,6 @@ fun StoneReconciliationDialog(attempt: StoneAttemptEntity, payment: PaymentEntit
     var operator by remember { mutableStateOf("") }
     var evidence by remember { mutableStateOf("") }
     // Deliberately blank: re-enter independent receipt data, do not merely echo the deeplink.
-    var reference by remember { mutableStateOf("") }
     var amount by remember { mutableStateOf("") }
     var method by remember { mutableStateOf("") }
     var installments by remember { mutableStateOf("") }
@@ -52,22 +51,25 @@ fun StoneReconciliationDialog(attempt: StoneAttemptEntity, payment: PaymentEntit
     var checked by remember { mutableStateOf(false) }
     AlertDialog(onDismissRequest = { if (!busy) onDismiss() }, title = { Text("Conciliar pagamento Stone") }, text = {
         Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text("Tentativa ${attempt.attemptId.take(8)} • Pedido Stone ${attempt.stoneOrderId}")
-            if (attempt.origin == "LEGACY_MANUAL") Text("Pagamento anterior: a referência acima é LOCAL e não foi enviada à Stone. Se confirmado, o recebimento será regularizado no Caixa atualmente aberto. Confira o pedido original pelo comprovante; mesas anteriores não serão vinculadas automaticamente.")
-            Text("Esperado: ${payment.amountCents} centavos • ${payment.method} • ${payment.installments} parcela(s).")
-            Text("${attempt.state}: ${attempt.detail.orEmpty()}")
-            Text("Abra o histórico/extrato no aplicativo Stone e confira pedido, valor, modalidade, parcelas e ATK. QR Code exibido ou aplicativo encerrado não comprovam recebimento.")
+            Text("Pedido ${attempt.orderId.take(8).uppercase()}")
+            if (attempt.origin == "LEGACY_MANUAL") Text("Registro de versão anterior. Se confirmado, será regularizado no caixa atualmente aberto. Confira o pedido pelo comprovante; vínculos antigos de mesa não serão presumidos.")
+            Text("${br.com.ruy.pos.ui.components.Money.format(payment.amountCents.toLong())} • ${br.com.ruy.pos.ui.components.OperationalText.method(payment.method)} • ${payment.installments} parcela(s)")
+            Text(br.com.ruy.pos.ui.components.OperationalText.status(attempt.state))
+            Text("Abra o histórico/extrato na Stone e confira pedido, valor, modalidade, parcelas e referência do comprovante. QR exibido ou aplicativo encerrado não comprovam recebimento.")
             Row {
                 FilterChip(selected = received, enabled = !busy, onClick = { received = true; checked = false }, label = { Text("Recebido") })
                 Spacer(Modifier.width(4.dp))
                 FilterChip(selected = !received, enabled = !busy, onClick = { received = false; checked = false }, label = { Text("Não recebido") })
             }
-            OutlinedTextField(reference, { reference = it }, label = { Text(if (attempt.origin == "LEGACY_MANUAL") "Referência local desta conciliação" else "ID do pedido conferido na Stone") })
-            OutlinedTextField(amount, { amount = it }, label = { Text("Valor conferido (centavos)") })
-            OutlinedTextField(method, { method = it }, label = { Text("Modalidade conferida (PIX, DEBIT, CREDIT…)") })
+            OutlinedTextField(amount, { amount = it }, label = { Text("Valor conferido (R$)") }, keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal))
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                listOf("PIX" to "Pix", "DEBIT" to "Débito", "CREDIT" to "Crédito").forEach { (value, label) ->
+                    FilterChip(method == value, { method = value }, label = { Text(label) }, enabled = !busy)
+                }
+            }
             OutlinedTextField(installments, { installments = it }, label = { Text("Parcelas conferidas (1 à vista)") })
             if (received) {
-                OutlinedTextField(atk, { atk = it }, label = { Text("ATK/Stone ID do comprovante") })
+                OutlinedTextField(atk, { atk = it }, label = { Text("Referência do comprovante Stone") })
                 OutlinedTextField(authorization, { authorization = it }, label = { Text("Autorização (cartão)") })
             }
             OutlinedTextField(operator, { operator = it }, label = { Text("Operador responsável") })
@@ -77,8 +79,8 @@ fun StoneReconciliationDialog(attempt: StoneAttemptEntity, payment: PaymentEntit
             Text("Conciliação manual registrada com o operador. Não é consulta automática à Stone.")
             error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         }
-    }, confirmButton = { TextButton(enabled = !busy && checked && reference.toLongOrNull() == attempt.stoneOrderId,
-        onClick = { onConfirm(PaymentCoordinator.Reconciliation(reference.toLongOrNull() ?: 0, amount.toIntOrNull() ?: -1,
+    }, confirmButton = { TextButton(enabled = !busy && checked,
+        onClick = { onConfirm(PaymentCoordinator.Reconciliation(attempt.stoneOrderId, br.com.ruy.pos.ui.components.Money.cents(amount) ?: -1,
             method, installments.toIntOrNull() ?: -1, received, operator, evidence, checked, atk, authorization)) }) {
         Text(if (busy) "Salvando…" else "Registrar conciliação")
     } }, dismissButton = { TextButton(enabled = !busy, onClick = onDismiss) { Text("Voltar") } })

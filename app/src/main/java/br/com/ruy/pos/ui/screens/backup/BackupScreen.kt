@@ -33,7 +33,7 @@ fun BackupScreen(repo: Repository, onBack: () -> Unit, onRestoreClick: () -> Uni
     var message by remember { mutableStateOf<String?>(null) }
     val backupFile = remember { BackupManager.backupFile(context) }
 
-    LaunchedEffect(backupFile.exists()) { message = if (backupFile.exists()) "Backup disponível em cache" else "Sem backup em cache" }
+    LaunchedEffect(backupFile.exists()) { message = if (backupFile.exists()) "Cópia disponível neste aparelho. Compartilhe para guardá-la em local seguro." else "Nenhuma cópia disponível neste aparelho" }
 
     if (showConfirm) {
         AlertDialog(onDismissRequest = { if (!busy) showConfirm = false }, title = { Text("Confirmar restauração") }, text = {
@@ -52,7 +52,7 @@ fun BackupScreen(repo: Repository, onBack: () -> Unit, onRestoreClick: () -> Uni
             RuyCard {
                 Text("Exportar", style = MaterialTheme.typography.titleSmall)
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("Salva o banco Room (com WAL), as fotos dos produtos e os cadastros em um arquivo ZIP.", style = MaterialTheme.typography.bodySmall, color = RuyTextSecondary)
+                Text("Salva pedidos, pagamentos, fotos e cadastros em um arquivo de backup. Compartilhe a cópia para guardá-la fora deste aparelho.", style = MaterialTheme.typography.bodySmall, color = RuyTextSecondary)
                 Spacer(modifier = Modifier.height(10.dp))
                 RuyPrimaryButton(text = if (busy) "Exportando…" else "Exportar backup", onClick = {
                     busy = true

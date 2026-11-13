@@ -142,6 +142,7 @@ class PaymentCoordinator(private val db: AppDatabase, private val options: () ->
 
     /** Explicit operator attestation against Stone receipt/statement, NOT an online Stone API verification. */
     suspend fun reconcile(input: Reconciliation) = db.withTransaction {
+        br.com.ruy.pos.security.PaymentAudit.validate(input.operator, input.evidence, input.atk, input.authorizationCode)
         require(input.checkedStatement && input.operator.trim().length >= 3 && input.evidence.trim().length >= 8) {
             "Informe operador e comprovante/extrato consultado e confirme a conferência no terminal Stone"
         }
@@ -163,7 +164,7 @@ class PaymentCoordinator(private val db: AppDatabase, private val options: () ->
                 "Informe código de autorização do comprovante"
             }
             check(db.stoneDao().otherWithAtk(atk, a.stoneOrderId) == null &&
-                db.paymentDao().getAll().none { it.paymentId != p.paymentId && it.status == "PAGO" && it.transactionRef == atk }) {
+                db.paymentDao().getAll().none { it.paymentId != p.paymentId && it.status == "PAGO" && it.transactionRef.equals(atk, ignoreCase = true) }) {
                 "ATK já vinculado a outro pagamento"
             }
             // Independent receipt data may resolve missing/divergent callback evidence, with operator audit.
@@ -195,6 +196,7 @@ class PaymentCoordinator(private val db: AppDatabase, private val options: () ->
     /** Payment executed on an EXTERNAL provider/machine (other POS, bank app, Pix manual). */
     suspend fun confirmExternal(orderId: String, amountCents: Int, method: String, operator: String,
                                 evidence: String, installments: Int = 1, transactionRef: String? = null, operationId: String? = null): String = db.withTransaction {
+        br.com.ruy.pos.security.PaymentAudit.validate(operator, evidence, transactionRef.orEmpty())
         val normalized = if (method in ExternalPaymentOptions.VOUCHER_METHODS) method else requireNotNull(StoneProtocol.method(method)) { "Modalidade externa inválida" }
         require(normalized in setOf("PIX", "DEBIT", "CREDIT") + ExternalPaymentOptions.VOUCHER_METHODS)
         val voucher = if (normalized in ExternalPaymentOptions.VOUCHER_METHODS) requireNotNull(options().validated().vouchers.find { it.method == normalized }) { "Voucher não habilitado para o estabelecimento" } else null
@@ -206,14 +208,14 @@ class PaymentCoordinator(private val db: AppDatabase, private val options: () ->
         require(ref != null && ref.matches(Regex("[A-Za-z0-9._-]{3,128}"))) { "Informe a referência do comprovante aprovado; não informe dados de cartão" }
         operationId?.let { id -> db.stoneDao().byAttemptId(id)?.let { a ->
             val existing = requireNotNull(db.paymentDao().byId(a.paymentId))
-            check(a.origin == "EXTERNAL_MANUAL" && existing.orderId == orderId && existing.amountCents == amountCents && existing.method == normalized && existing.installments == installments && existing.transactionRef == ref) { "Confirmação conflitante" }
+            check(a.origin == "EXTERNAL_MANUAL" && existing.orderId == orderId && existing.amountCents == amountCents && existing.method == normalized && existing.installments == installments && existing.transactionRef.equals(ref, ignoreCase = true)) { "Confirmação conflitante" }
             return@withTransaction existing.paymentId
         } }
         requireNoFlight()
         val order = requireNotNull(db.orderDao().byId(orderId)) { "Pedido não encontrado" }
         require(amountCents in 1..remaining(order)) { "Valor excede o saldo do pedido" }
         val session = requireNotNull(db.cashSessionDao().getOpen()) { "Abra o Caixa antes de registrar recebimento" }
-        check(db.paymentDao().getAll().none { it.status == "PAGO" && it.transactionRef == ref }) { "Comprovante já utilizado" }
+        check(db.paymentDao().getAll().none { it.status == "PAGO" && it.transactionRef.equals(ref, ignoreCase = true) }) { "Comprovante já utilizado" }
         val p = PaymentEntity(UUID.randomUUID().toString(), orderId, amountCents, normalized, "PAGO_MANUALMENTE",
             null, null, installments, ref, cashSessionId = session.sessionId)
         db.paymentDao().insert(p)
@@ -246,6 +248,7 @@ class PaymentCoordinator(private val db: AppDatabase, private val options: () ->
         val received: Boolean, val operator: String, val evidence: String, val receipt: String, val checked: Boolean, val installments: Int = 1)
 
     suspend fun confirmTapStone(input: TapStoneProof) = db.withTransaction {
+        br.com.ruy.pos.security.PaymentAudit.validate(input.operator, input.evidence, input.receipt)
         require(input.checked && input.operator.trim().length in 3..80 && input.evidence.trim().length in 8..500) {
             "Confira o comprovante/extrato e informe operador e evidência; não informe dados de cartão"
         }
@@ -257,12 +260,12 @@ class PaymentCoordinator(private val db: AppDatabase, private val options: () ->
         }
         val receipt = input.receipt.trim()
         if (a.activeSlot == null) {
-            check((a.state == "CONFIRMADO") == input.received && (!input.received || p.transactionRef == receipt)) { "Confirmação conflitante" }
+            check((a.state == "CONFIRMADO") == input.received && (!input.received || p.transactionRef.equals(receipt, ignoreCase = true))) { "Confirmação conflitante" }
             return@withTransaction
         }
         if (input.received) {
             require(receipt.matches(Regex("[A-Za-z0-9._-]{3,128}"))) { "Informe referência do comprovante aprovado; nunca número do cartão" }
-            check(db.paymentDao().getAll().none { it.paymentId != p.paymentId && it.status == "PAGO" && it.transactionRef == receipt }) { "Comprovante já utilizado" }
+            check(db.paymentDao().getAll().none { it.paymentId != p.paymentId && it.status == "PAGO" && it.transactionRef.equals(receipt, ignoreCase = true) }) { "Comprovante já utilizado" }
             settle(p.copy(transactionRef = receipt))
         } else db.paymentDao().update(p.copy(status = "SEM_RECEBIMENTO"))
         db.stoneDao().update(a.copy(state = if (input.received) "CONFIRMADO" else "SEM_RECEBIMENTO", activeSlot = null,
@@ -292,6 +295,7 @@ class PaymentCoordinator(private val db: AppDatabase, private val options: () ->
         val operator: String, val evidence: String, val receipt: String, val checked: Boolean)
 
     suspend fun confirmPix(input: ManualReceiptProof) = db.withTransaction {
+        br.com.ruy.pos.security.PaymentAudit.validate(input.operator, input.evidence, input.receipt)
         require(input.checked && input.operator.trim().length in 3..80 && input.evidence.trim().length in 8..500) { "Confira o recebimento no banco e informe operador e comprovante" }
         val a = requireNotNull(db.stoneDao().byReference(input.reference))
         check(a.origin == "PIX_STATIC")
@@ -299,12 +303,12 @@ class PaymentCoordinator(private val db: AppDatabase, private val options: () ->
         require(p.orderId == input.orderId && p.amountCents == input.amountCents) { "Pedido ou valor divergente" }
         val receipt = input.receipt.trim()
         if (a.activeSlot == null) {
-            check((a.state == "CONFIRMADO") == input.received && (!input.received || p.transactionRef == receipt)) { "Confirmação conflitante" }
+            check((a.state == "CONFIRMADO") == input.received && (!input.received || p.transactionRef.equals(receipt, ignoreCase = true))) { "Confirmação conflitante" }
             return@withTransaction
         }
         if (input.received) {
             require(receipt.matches(Regex("[A-Za-z0-9._-]{3,128}"))) { "Informe a referência do comprovante bancário" }
-            check(db.paymentDao().getAll().none { it.paymentId != p.paymentId && it.status == "PAGO" && it.transactionRef == receipt }) { "Comprovante já utilizado" }
+            check(db.paymentDao().getAll().none { it.paymentId != p.paymentId && it.status == "PAGO" && it.transactionRef.equals(receipt, ignoreCase = true) }) { "Comprovante já utilizado" }
             settle(p.copy(transactionRef = receipt))
         } else db.paymentDao().update(p.copy(status = "SEM_RECEBIMENTO"))
         db.stoneDao().update(a.copy(state = if (input.received) "CONFIRMADO" else "SEM_RECEBIMENTO", activeSlot = null,
