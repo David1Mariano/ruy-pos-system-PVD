@@ -146,4 +146,14 @@ class TapStoneExternalSimulatedTest {
         assertFalse(ready.copy(nfcEnabled = false).locallyReady)
         assertFalse(ready.copy(internetValidated = false).locallyReady)
     }
+    @Test fun installmentsMustMatchApprovedCreditReceiptAndDebitCannotBeSplit() = runBlocking {
+        rejected { p.beginTapStone(order, 2300, "TAPSTONE_DEBIT", 2) }
+        rejected { p.beginTapStone(order, 2300, "TAPSTONE_CREDIT", 19) }
+        val a = p.beginTapStone(order, 2300, "TAPSTONE_CREDIT", 3)
+        val input = proof(a).copy(method = "TAPSTONE_CREDIT", installments = 3)
+        rejected { p.confirmTapStone(input.copy(installments = 2)) }
+        p.confirmTapStone(input)
+        assertEquals(3, repo.getPayments(order).single().installments)
+        assertEquals(2300, repo.getOrder(order)!!.totalCents)
+    }
 }

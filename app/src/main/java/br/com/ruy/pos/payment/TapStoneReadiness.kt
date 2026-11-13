@@ -10,6 +10,13 @@ data class TapStoneReadiness(val device: String, val androidSupported: Boolean, 
                              val nfcEnabled: Boolean, val internetValidated: Boolean) {
     val locallyReady get() = androidSupported && nfcPresent && nfcEnabled && internetValidated
     val description get() = "$device • Android 10+: $androidSupported • NFC: $nfcPresent • NFC ativo: $nfcEnabled • Internet validada: $internetValidated"
+    val operatorDescription get() = when {
+        !androidSupported -> "A aproximação pela Stone requer Android 10 ou superior."
+        !nfcPresent -> "Este aparelho não possui NFC. Use outra forma de pagamento."
+        !nfcEnabled -> "Ative o NFC nas configurações do Android para receber por aproximação."
+        !internetValidated -> "Conecte o aparelho à internet para usar o TapStone."
+        else -> "NFC ativo e conexão disponível. Confira o acesso ao TapStone no aplicativo oficial Stone."
+    }
     companion object {
         fun read(context: Context): TapStoneReadiness {
             val adapter = (context.getSystemService(Context.NFC_SERVICE) as? NfcManager)?.defaultAdapter

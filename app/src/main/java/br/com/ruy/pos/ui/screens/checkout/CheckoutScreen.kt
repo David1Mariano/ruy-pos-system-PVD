@@ -35,10 +35,11 @@ fun ExternalPaymentDialog(orderId: String, method: String, amountCents: Int, bus
     var evidence by remember { mutableStateOf("") }
     var reference by remember { mutableStateOf("") }
     var installments by remember { mutableStateOf("1") }
+
     var checked by remember { mutableStateOf(false) }
     AlertDialog(onDismissRequest = { if (!busy) onDismiss() }, title = { Text("Pagamento externo confirmado") }, text = {
         Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text("Valor: ${amountCents} centavos • Modalidade: $method")
+            Text("Pedido ${orderId.take(8).uppercase()} • ${Money.format(amountCents.toLong())} • ${OperationalText.method(method)}")
             Text("O pagamento foi efetuado em outro provedor/maquininha. Nenhum dado do cartão é coletado pelo Ruy POS.")
             OutlinedTextField(reference, { reference = it }, label = { Text("Identificador do comprovante (opcional)") })
             if (method == "CREDITO") OutlinedTextField(installments, { installments = it }, label = { Text("Parcelas (1 a 99)") })
@@ -74,8 +75,8 @@ fun CheckoutScreen(
     var orderId by rememberSaveable { mutableStateOf(existingOrderId) }
     var method by remember { mutableStateOf("DINHEIRO") }
     var received by remember { mutableStateOf("") }
-    var installments by remember { mutableStateOf("1") }
-    var installmentType by remember { mutableStateOf("NONE") }
+
+
     var amount by remember { mutableStateOf("") }
     var processing by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -86,6 +87,8 @@ fun CheckoutScreen(
     var pixDialog by remember { mutableStateOf(false) }
     var pixQuote by remember { mutableStateOf<br.com.ruy.pos.payment.pix.PixQuote?>(null) }
     var tapCredit by remember { mutableStateOf(false) }
+    var tapInstallments by remember { mutableStateOf("1") }
+    var tapTermsChecked by remember { mutableStateOf(false) }
     var stoneAccessChecked by remember { mutableStateOf(false) }
     var readiness by remember { mutableStateOf(TapStoneReadiness.read(context)) }
     val lifecycle = androidx.compose.ui.platform.LocalLifecycleOwner.current.lifecycle
@@ -161,7 +164,7 @@ fun CheckoutScreen(
             if (!processing) {
                 processing = true
                 scope.launch {
-                    try { repo.payments.confirmTapStone(proof); tapProof = false; error = null }
+                    try { repo.payments.confirmTapStone(proof); tapProof = false; error = null; notify(if (proof.received) "Pagamento confirmado manualmente — TapStone externo." else "Conferência salva sem recebimento") }
                     catch (e: Exception) { error = br.com.ruy.pos.ui.components.OperationalText.error(e) }
                     finally { processing = false }
                 }
@@ -214,19 +217,6 @@ fun CheckoutScreen(
                         label = { Text("Valor recebido (R$)") }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp))
                     Text("Troco: ${reais(change)}")
                 }
-                if (method == "CREDITO") {
-                    OutlinedTextField(installments, { installments = it }, enabled = !processing && active == null,
-                        label = { Text("Parcelas (1 a 99)") }, modifier = Modifier.fillMaxWidth())
-                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        listOf("NONE", "MERCHANT", "ISSUER").forEach { value ->
-                            FilterChip(selected = installmentType == value,
-                                enabled = !processing && active == null && (value == "NONE" ||
-                                    value == "MERCHANT" && configuration.merchantSupported || value == "ISSUER" && configuration.issuerSupported),
-                                onClick = { installmentType = value }, label = { Text(value) })
-                        }
-                    }
-                    Text("NONE: à vista. Parcelamento conforme contrato e opções do terminal; sem cálculo de taxas.", style = MaterialTheme.typography.bodySmall)
-                }
                 if (method == "PIX") {
                     Text("QR estático • confirme o crédito no banco. Configure a conta em Mais > Configurações > Pagamentos.", style = MaterialTheme.typography.bodySmall)
                 } else if (method != "DINHEIRO") {
@@ -236,7 +226,7 @@ fun CheckoutScreen(
             }
             RuyCard {
                 Text("Aproximação no celular", style = MaterialTheme.typography.titleSmall)
-                Text(readiness.description, style = MaterialTheme.typography.bodySmall)
+                Text(readiness.operatorDescription, style = MaterialTheme.typography.bodySmall)
                 Text("TapStone processado no aplicativo oficial Stone. Confirmação manual; sem integração automática.")
                 if (br.com.ruy.pos.BuildConfig.HOMOLOGATION) {
                     Text("Indisponível para cobrança na homologação. Use pagamento simulado ou dinheiro fictício.")
@@ -252,7 +242,11 @@ fun CheckoutScreen(
                     CheckLine("Conferi: aplicativo oficial Stone instalado e TapStone autorizado na conta", stoneAccessChecked) { stoneAccessChecked = it }
                     Row {
                         FilterChip(!tapCredit, { tapCredit = false }, label = { Text("Débito à vista") }, enabled = !processing)
-                        FilterChip(tapCredit, { tapCredit = true }, label = { Text("Crédito à vista") }, enabled = !processing)
+                        FilterChip(tapCredit, { tapCredit = true }, label = { Text("Crédito") }, enabled = !processing)
+                    }
+                    if (tapCredit) {
+                        OutlinedTextField(tapInstallments, { tapInstallments = it; tapTermsChecked = false }, label = { Text("Parcelas aprovadas pela Stone • 1 a 18") })
+                        CheckLine("Conferi as condições de parcelamento disponíveis no provedor; sem acréscimos no Ruy POS", tapTermsChecked) { tapTermsChecked = it }
                     }
                     TextButton(onClick = { readiness = TapStoneReadiness.read(context) }) { Text("Atualizar compatibilidade") }
                     TextButton(enabled = !processing && active == null && readiness.locallyReady && stoneAccessChecked && order != null && remaining > 0,
@@ -262,7 +256,8 @@ fun CheckoutScreen(
                                 try {
                                     readiness = TapStoneReadiness.read(context)
                                     check(readiness.locallyReady) { "Android 10+, NFC ativo e internet necessários" }
-                                    repo.payments.beginTapStone(requireNotNull(orderId), amountCents, if (tapCredit) "TAPSTONE_CREDIT" else "TAPSTONE_DEBIT")
+                                    check(!tapCredit || tapTermsChecked) { "Confira as condições no provedor" }
+                                    repo.payments.beginTapStone(requireNotNull(orderId), amountCents, if (tapCredit) "TAPSTONE_CREDIT" else "TAPSTONE_DEBIT", if (tapCredit) tapInstallments.toIntOrNull() ?: 0 else 1)
                                     tapProof = true
                                 } catch (e: Exception) { error = br.com.ruy.pos.ui.components.OperationalText.error(e) }
                                 finally { processing = false }

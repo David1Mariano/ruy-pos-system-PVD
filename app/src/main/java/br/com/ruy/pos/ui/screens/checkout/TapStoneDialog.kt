@@ -10,33 +10,38 @@ import androidx.compose.ui.unit.dp
 import br.com.ruy.pos.data.local.*
 import br.com.ruy.pos.payment.PaymentCoordinator
 import br.com.ruy.pos.BuildConfig
+import br.com.ruy.pos.ui.components.Money
+import br.com.ruy.pos.ui.components.OperationalText
 
 @Composable
 fun TapStoneDialog(a: StoneAttemptEntity, payment: PaymentEntity, busy: Boolean, error: String?,
     onDismiss: () -> Unit, onConfirm: (PaymentCoordinator.TapStoneProof) -> Unit) {
-    var order by remember { mutableStateOf("") }
     var amount by remember { mutableStateOf("") }
     var method by remember { mutableStateOf("") }
+    var installments by remember { mutableStateOf("") }
     var operator by remember { mutableStateOf("") }
     var evidence by remember { mutableStateOf("") }
     var receipt by remember { mutableStateOf("") }
     var received by remember { mutableStateOf(true) }
     var checked by remember { mutableStateOf(false) }
-    AlertDialog(onDismissRequest = { if (!busy) onDismiss() }, title = { Text("PAGAMENTO POR APROXIMAÇÃO — STONE EXTERNO") }, text = {
+    AlertDialog(onDismissRequest = { if (!busy) onDismiss() }, title = { Text("Aproximação • Stone externo") }, text = {
         Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             if (BuildConfig.HOMOLOGATION) Text("HOMOLOGAÇÃO: somente evidências fictícias. Não efetue cobrança.")
-            Text("Pedido: ${a.orderId}")
-            Text("Valor: ${payment.amountCents} centavos • ${payment.method} • à vista")
-            Text("Status: ${a.state}. Referência local: ${a.stoneOrderId}.")
+            Text("Pedido ${a.orderId.take(8).uppercase()}")
+            Text("${Money.format(payment.amountCents.toLong())} • ${OperationalText.method(payment.method)} • ${payment.installments} parcela(s)")
+            Text(OperationalText.status(a.state))
             Text("Acesse manualmente o aplicativo oficial Stone: Vender > TapStone. Informe exatamente o valor acima e a modalidade. Confira a aprovação e o comprovante antes de voltar. O Ruy POS não inicia nem verifica a cobrança.")
             Text("Se houver recusa, abandono, falta de internet ou resultado indeterminado, mantenha pendente até conferir o extrato. Voltar nunca registra recebimento.")
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 FilterChip(received, { received = true; checked = false }, label = { Text("Recebido") }, enabled = !busy)
                 FilterChip(!received, { received = false; checked = false }, label = { Text("Não recebido") }, enabled = !busy)
             }
-            OutlinedTextField(order, { order = it }, label = { Text("Pedido local conferido (UUID completo)") })
-            OutlinedTextField(amount, { amount = it }, label = { Text("Valor conferido (centavos)") })
-            OutlinedTextField(method, { method = it }, label = { Text("Modalidade conferida (TAPSTONE_DEBIT/CREDIT)") })
+            OutlinedTextField(amount, { amount = it }, label = { Text("Valor conferido (R$)") })
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                FilterChip(method == "TAPSTONE_DEBIT", { method = "TAPSTONE_DEBIT" }, label = { Text("Débito") }, enabled = !busy)
+                FilterChip(method == "TAPSTONE_CREDIT", { method = "TAPSTONE_CREDIT" }, label = { Text("Crédito") }, enabled = !busy)
+            }
+            OutlinedTextField(installments, { installments = it }, label = { Text("Parcelas conferidas • 1 à vista") })
             if (received) OutlinedTextField(receipt, { receipt = it }, label = { Text("Referência única do comprovante aprovado") })
             OutlinedTextField(operator, { operator = it }, label = { Text("Operador responsável") })
             OutlinedTextField(evidence, { evidence = it }, label = { Text("Extrato consultado: data/hora e referência") })
@@ -45,12 +50,12 @@ fun TapStoneDialog(a: StoneAttemptEntity, payment: PaymentEntity, busy: Boolean,
                 Text(if (received) "Conferi a aprovação, valor, modalidade e comprovante deste pedido"
                      else "Conferi no extrato: sem recebimento e sem transação em andamento")
             }
-            Text("Confirmação manual auditada. Não informe número, nome, validade, senha ou código de segurança do cartão.")
+            Text("A confirmação será manual — TapStone externo. Não informe dados ou senha do cartão.")
             error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         }
     }, confirmButton = { TextButton(enabled = !busy && checked, onClick = {
-        onConfirm(PaymentCoordinator.TapStoneProof(a.stoneOrderId, order.trim(), amount.toIntOrNull() ?: -1,
-            method.trim(), received, operator, evidence, receipt, checked))
+        onConfirm(PaymentCoordinator.TapStoneProof(a.stoneOrderId, a.orderId, Money.cents(amount) ?: -1,
+            method, received, operator, evidence, receipt, checked, installments.toIntOrNull() ?: -1))
     }) { Text("Registrar conferência manual") } }, dismissButton = {
         TextButton(enabled = !busy, onClick = onDismiss) { Text("Voltar mantendo pendente") }
     })

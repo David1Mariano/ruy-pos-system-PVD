@@ -112,7 +112,7 @@ fun RuyNavHost(repo: Repository, start: String = "sales", onExit: () -> Unit, on
                     val data = checkoutData
                     if (data != null) {
                         androidx.compose.runtime.key(data.orderId, data.comandaId, data.items) {
-                            CheckoutScreen(repo = repo, totalCents = data.totalCents, items = data.items, unitPrice = data.unitPrice, comandaId = data.comandaId, tableId = data.tableId, existingOrderId = data.orderId, onBack = { route = if (data.comandaId != null) "tables" else "sales" }, onPaidAndClosed = { checkoutData = null; route = if (data.comandaId != null) "tables" else "orders" })
+                            CheckoutScreen(repo = repo, totalCents = data.totalCents, items = data.items, unitPrice = data.unitPrice, comandaId = data.comandaId, tableId = data.tableId, existingOrderId = data.orderId, onBack = { route = if (data.comandaId != null) "tables" else "orders" }, onPaidAndClosed = { checkoutData = null; route = if (data.comandaId != null) "tables" else "orders" })
                         }
                     } else {
                         route = "sales"

@@ -218,14 +218,15 @@ class PaymentCoordinator(private val db: AppDatabase) {
     }
 
     /** Saves intent to collect externally; never invokes a financial app or network. */
-    suspend fun beginTapStone(orderId: String, amountCents: Int, method: String): StoneAttemptEntity = db.withTransaction {
+    suspend fun beginTapStone(orderId: String, amountCents: Int, method: String, installments: Int = 1): StoneAttemptEntity = db.withTransaction {
         requireNoFlight()
         require(method in setOf("TAPSTONE_DEBIT", "TAPSTONE_CREDIT"))
+        require(installments in 1..18 && (method == "TAPSTONE_CREDIT" || installments == 1)) { "Parcelas não disponíveis para esta modalidade" }
         val order = requireNotNull(db.orderDao().byId(orderId))
         require(amountCents in 1..remaining(order)) { "Valor excede saldo" }
         verifyComanda(order)
         val session = requireNotNull(db.cashSessionDao().getOpen()) { "Abra o Caixa" }
-        val p = PaymentEntity(UUID.randomUUID().toString(), orderId, amountCents, method, "AGUARDANDO", cashSessionId = session.sessionId)
+        val p = PaymentEntity(UUID.randomUUID().toString(), orderId, amountCents, method, "AGUARDANDO", installments = installments, cashSessionId = session.sessionId)
         db.paymentDao().insert(p)
         val a = StoneAttemptEntity(attemptId = UUID.randomUUID().toString(), paymentId = p.paymentId, orderId = orderId,
             installmentType = "NONE", origin = "TAPSTONE_EXTERNAL", state = "EM_CONFERENCIA",
@@ -235,7 +236,7 @@ class PaymentCoordinator(private val db: AppDatabase) {
     }
 
     data class TapStoneProof(val reference: Long, val orderId: String, val amountCents: Int, val method: String,
-        val received: Boolean, val operator: String, val evidence: String, val receipt: String, val checked: Boolean)
+        val received: Boolean, val operator: String, val evidence: String, val receipt: String, val checked: Boolean, val installments: Int = 1)
 
     suspend fun confirmTapStone(input: TapStoneProof) = db.withTransaction {
         require(input.checked && input.operator.trim().length in 3..80 && input.evidence.trim().length in 8..500) {
@@ -244,7 +245,7 @@ class PaymentCoordinator(private val db: AppDatabase) {
         val a = requireNotNull(db.stoneDao().byReference(input.reference))
         check(a.origin == "TAPSTONE_EXTERNAL")
         val p = requireNotNull(db.paymentDao().byId(a.paymentId))
-        require(input.orderId == p.orderId && input.amountCents == p.amountCents && input.method == p.method) {
+        require(input.orderId == p.orderId && input.amountCents == p.amountCents && input.method == p.method && input.installments == p.installments) {
             "Pedido, valor ou modalidade divergente do comprovante"
         }
         val receipt = input.receipt.trim()
